@@ -411,6 +411,7 @@
             .then(data => {
                 dbData = data;
                 if(!dbData.groups) dbData.groups = [];
+                if(!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
                 renderWeeklyCalendar();
                 renderFeed();
                 renderMembers();
@@ -561,7 +562,9 @@
     // ==================== 그룹 기능 ====================
     function getAllGroups() {
         const custom = dbData.groups || [];
-        return [...DEFAULT_GROUPS, ...custom];
+        const deletedIds = dbData.deletedDefaultGroups || [];
+        const defaults = DEFAULT_GROUPS.filter(g => !deletedIds.includes(g.id));
+        return [...defaults, ...custom];
     }
 
     function renderGroupList() {
@@ -575,10 +578,7 @@
             card.className = 'group-card';
             card.onclick = () => enterGroup(g.name);
 
-            let deleteBtn = '';
-            if (g.creator !== '__system__' && g.creator === myName) {
-                deleteBtn = `<button class="btn-group-delete" onclick="event.stopPropagation(); deleteGroup('${g.id}')" title="그룹 삭제">&times;</button>`;
-            }
+            let deleteBtn = `<button class="btn-group-delete" onclick="event.stopPropagation(); deleteGroup('${g.id}')" title="그룹 삭제">&times;</button>`;
 
             card.innerHTML = `
                 ${deleteBtn}
@@ -645,7 +645,12 @@
     function deleteGroup(id) {
         if (!confirm("정말 이 그룹을 삭제하시겠습니까?")) return;
         const name = document.getElementById('userName').value.trim();
-        dbData.groups = dbData.groups.filter(g => g.id !== id);
+        if (id.startsWith('default_')) {
+            if (!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
+            dbData.deletedDefaultGroups.push(id);
+        } else {
+            dbData.groups = dbData.groups.filter(g => g.id !== id);
+        }
         renderGroupList();
         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteGroup', id: id, name: name }) });
     }
@@ -892,12 +897,12 @@
     }
     li.innerHTML = `<div class="feed-header"><div><span style="font-weight:bold;">${feed.name}</span><span style="font-size:0.8em; color:#999; margin-left:8px;">${dateStr}</span></div><div>${actionBtns}</div></div>${imgHtml}<div style="white-space:pre-wrap;">${content}</div><div class="comment-section"><ul class="comment-list">${commentHtml}</ul><div style="display:flex; gap:5px;"><input type="text" id="commentInput-${feed.id}" placeholder="댓글 달기..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;"><button class="btn-submit" style="width:60px; padding:0; margin-top:0;" onclick="saveComment('${feed.id}')">등록</button></div></div>`; listEl.appendChild(li); }); }
 
-    function renderMembers() { const listEl = document.getElementById('memberList'); listEl.innerHTML = ''; if (!dbData.members || dbData.members.length === 0) { listEl.innerHTML = '<p style="text-align:center; color:#999;">멤버가 없습니다.</p>'; return; } dbData.members.forEach(member => { const div = document.createElement('div'); div.className = 'member-card'; const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`; div.innerHTML = `<img src="${avatarUrl}" class="member-avatar"><div class="member-name">${member.name}</div><div class="member-bio">${member.bio}</div>`; listEl.appendChild(div); }); }
+    function renderMembers() { const listEl = document.getElementById('memberList'); listEl.innerHTML = ''; if (!dbData.members || dbData.members.length === 0) { listEl.innerHTML = '<p style="text-align:center; color:#999;">멤버가 없습니다.</p>'; return; } dbData.members.forEach(member => { const div = document.createElement('div'); div.className = 'member-card'; const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`; const createdAt = member.createdAt ? new Date(member.createdAt).toLocaleDateString() : ''; div.innerHTML = `<img src="${avatarUrl}" class="member-avatar"><div class="member-name">${member.name}</div><div class="member-bio">${member.bio}</div>${createdAt ? `<div style="font-size:0.8em; color:#aaa; margin-top:8px;">가입일: ${createdAt}</div>` : ''}`; listEl.appendChild(div); }); }
     function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
-    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); const avatarUrl = document.getElementById('avatarPreview').src; if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
+    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); const avatarUrl = document.getElementById('avatarPreview').src; if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
     function parseTaskContent(taskStr) { try { if (taskStr.trim().startsWith("{")) return JSON.parse(taskStr); } catch (e) {} return { rating: null, items: [{ category: '기존', content: taskStr }] }; }
     function updateAvatarPreview() { const style = document.getElementById('avatarStyle').value; const seed = currentAvatarSeed || "default"; document.getElementById('avatarPreview').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`; }
     function randomizeAvatar() { currentAvatarSeed = Math.random().toString(36).substring(7); updateAvatarPreview(); }
