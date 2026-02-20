@@ -478,6 +478,17 @@
             .catch(e => { console.error(e); loadingEl.style.display='none'; });
     }
 
+    // dateKey("2025-2-15") → Date 객체로 변환
+    function parseDateKey(dk) { const p = dk.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+
+    // 멤버의 첫 성과 날짜 이전인지 확인 (첫 성과 없으면 true = 숨김)
+    function isBeforeFirstTask(memberName, dateKey) {
+        const memberTasks = dbData.tasks ? dbData.tasks.filter(t => t.name === memberName) : [];
+        if (memberTasks.length === 0) return true;
+        const firstDate = memberTasks.map(t => parseDateKey(t.date)).sort((a,b) => a-b)[0];
+        return parseDateKey(dateKey) < firstDate;
+    }
+
     // ==================== 오늘의 성과 (프로필 카드 그리드) ====================
     function renderWeeklyCalendar() {
         const grid = document.getElementById('weeklyCalendar');
@@ -508,10 +519,10 @@
             grid.appendChild(card);
         });
 
-        // 미작성 멤버 카드
+        // 미작성 멤버 카드 (첫 성과 이전 날짜면 숨김)
         if (dbData.members) {
             dbData.members.forEach(member => {
-                if (!submittedNames.has(member.name)) {
+                if (!submittedNames.has(member.name) && !isBeforeFirstTask(member.name, dateKey)) {
                     const card = document.createElement('div');
                     card.className = 'submitter-card faint';
                     card.onclick = () => openDayDetail(dateKey);
@@ -580,10 +591,10 @@
             container.appendChild(card);
         });
 
-        // 미작성 멤버 카드
+        // 미작성 멤버 카드 (첫 성과 이전 날짜면 숨김)
         if (dbData.members) {
             dbData.members.forEach(member => {
-                if (!submittedNames.has(member.name)) {
+                if (!submittedNames.has(member.name) && !isBeforeFirstTask(member.name, date)) {
                     const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
                     const card = document.createElement('div');
                     card.className = 'day-detail-card faint';
@@ -679,7 +690,7 @@
             });
             if (dbData.members) {
                 dbData.members.forEach(m => {
-                    if (!submittedNames.has(m.name)) {
+                    if (!submittedNames.has(m.name) && !isBeforeFirstTask(m.name, dKey)) {
                         const aUrl = m.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${m.name}`;
                         avatarsHtml += `<img src="${aUrl}" class="avatar-faint" title="${m.name} (미작성)">`;
                     }
