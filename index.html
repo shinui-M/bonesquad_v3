@@ -472,25 +472,22 @@
                 renderMembers();
                 renderGroupList();
                 if(currentGroup) enterGroup(currentGroup);
-                // 기존 멤버의 프로필 폼 복원 (서버 데이터 우선, localStorage 백업)
+                // 내 프로필 복원 (localStorage 우선 → 서버 백업)
                 const savedName = document.getElementById('userName').value.trim();
                 if (savedName) {
                     let me = dbData.members ? dbData.members.find(m => m.name === savedName) : null;
-                    // 서버에 데이터가 없으면 localStorage에서 복원
-                    if (!me || (!me.bio && !me.avatar)) {
-                        const localProfile = localStorage.getItem('study_profile_' + savedName);
-                        if (localProfile) {
-                            const lp = JSON.parse(localProfile);
-                            if (!me) {
-                                me = { name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt };
-                                if(!dbData.members) dbData.members = [];
-                                dbData.members.push(me);
-                                renderMembers();
-                            } else {
-                                if (!me.bio && lp.bio) me.bio = lp.bio;
-                                if (!me.avatar && lp.avatar) me.avatar = lp.avatar;
-                            }
+                    const localProfile = localStorage.getItem('study_profile_' + savedName);
+                    if (localProfile) {
+                        const lp = JSON.parse(localProfile);
+                        if (!me) {
+                            me = { name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt };
+                            if(!dbData.members) dbData.members = [];
+                            dbData.members.push(me);
+                        } else {
+                            me.bio = lp.bio || me.bio;
+                            me.avatar = lp.avatar || me.avatar;
                         }
+                        renderMembers();
                     }
                     if (me && me.avatar) {
                         if (me.avatar.includes('api.dicebear.com')) {
