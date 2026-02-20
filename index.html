@@ -461,37 +461,39 @@
                 dbData = data;
                 if(!dbData.groups) dbData.groups = [];
                 if(!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
+                if(!dbData.members) dbData.members = [];
                 // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지)
-                if (dbData.members && dbData.members.length > 0) {
+                if (dbData.members.length > 0) {
                     const memberMap = {};
                     dbData.members.forEach(m => { memberMap[m.name] = m; });
                     dbData.members = Object.values(memberMap);
                 }
+                // 내 프로필: localStorage 데이터로 덮어쓰기 (렌더링 전에 반영)
+                const savedName = document.getElementById('userName').value.trim();
+                if (savedName) {
+                    const localProfile = localStorage.getItem('study_profile_' + savedName);
+                    if (localProfile) {
+                        const lp = JSON.parse(localProfile);
+                        const idx = dbData.members.findIndex(m => m.name === savedName);
+                        if (idx >= 0) {
+                            if (lp.bio) dbData.members[idx].bio = lp.bio;
+                            if (lp.avatar) dbData.members[idx].avatar = lp.avatar;
+                        } else {
+                            dbData.members.push({ name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt });
+                        }
+                    }
+                }
+                // 데이터 교정 완료 후 렌더링
                 renderWeeklyCalendar();
                 renderFeed();
                 renderMembers();
                 renderGroupList();
                 if(currentGroup) enterGroup(currentGroup);
-                // 내 프로필 복원 (localStorage 우선 → 서버 백업)
-                const savedName = document.getElementById('userName').value.trim();
+                // 폼 필드 복원
                 if (savedName) {
-                    let me = dbData.members ? dbData.members.find(m => m.name === savedName) : null;
-                    const localProfile = localStorage.getItem('study_profile_' + savedName);
-                    if (localProfile) {
-                        const lp = JSON.parse(localProfile);
-                        if (!me) {
-                            me = { name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt };
-                            if(!dbData.members) dbData.members = [];
-                            dbData.members.push(me);
-                        } else {
-                            me.bio = lp.bio || me.bio;
-                            me.avatar = lp.avatar || me.avatar;
-                        }
-                        renderMembers();
-                    }
+                    const me = dbData.members.find(m => m.name === savedName);
                     if (me && me.avatar) {
                         if (me.avatar.includes('api.dicebear.com')) {
-                            // DiceBear 아바타: 스타일과 시드 복원
                             const styleMatch = me.avatar.match(/7\.x\/([^/]+)\//);
                             const seedMatch = me.avatar.match(/seed=([^&]*)/);
                             if (styleMatch) document.getElementById('avatarStyle').value = styleMatch[1];
