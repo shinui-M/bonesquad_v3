@@ -155,6 +155,23 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .close-btn { cursor: pointer; font-size: 2em; line-height: 0.5; color: #999; }
 
+        /* 모두의 성과 모달 */
+        .day-detail-date { text-align: center; font-size: 1.1em; color: #666; margin-bottom: 18px; }
+        .day-detail-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); transition: 0.2s; }
+        .day-detail-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .day-detail-card.faint { opacity: 0.5; background: #fafafa; border: 1px dashed #ddd; box-shadow: none; }
+        .day-detail-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .day-detail-profile img { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #f0f0f0; object-fit: cover; background: #eee; }
+        .day-detail-profile .profile-info { flex: 1; }
+        .day-detail-profile .profile-name { font-weight: bold; font-size: 1.05em; color: #2c3e50; }
+        .day-detail-profile .profile-rating { color: #f1c40f; font-size: 0.95em; margin-top: 2px; }
+        .day-detail-items { display: flex; flex-direction: column; gap: 6px; }
+        .day-detail-item { display: flex; align-items: center; gap: 10px; font-size: 0.93em; }
+        .day-detail-tag { font-weight: bold; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; min-width: 44px; text-align: center; }
+        .day-detail-content { color: #444; line-height: 1.4; }
+        .btn-write-from-detail { display: block; width: 100%; padding: 13px; background: #e74c3c; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1em; margin-top: 18px; transition: 0.2s; }
+        .btn-write-from-detail:hover { background: #c0392b; }
+
         /* 모바일 최적화 */
         @media (max-width: 768px) {
             .container { padding: 15px; margin: 10px; }
@@ -295,10 +312,6 @@
             <span class="close-btn" onclick="closeModal()">&times;</span>
         </div>
         <div class="modal-body">
-            <h4 style="color:#e74c3c;">오늘의 기록</h4>
-            <div id="othersList"></div>
-            <hr style="border:0; border-top:1px solid #eee; margin: 20px 0;">
-            <h4 style="color:#e74c3c;">성과 작성하기 (수정 가능)</h4>
             <div class="input-group">
                 <label style="font-weight:bold; display:block; margin-bottom:5px;">평점 (0.0~5.0)</label>
                 <input type="number" id="inputRating" step="0.1" min="0" max="5" value="0.0" style="width:100px;">
@@ -309,6 +322,20 @@
                 <button class="btn-add" onclick="addTaskItem()">+ 추가</button>
             </div>
             <button class="btn-submit" onclick="saveTask()">제출하기 (수정 저장)</button>
+        </div>
+    </div>
+</div>
+
+<!-- 모두의 성과 보기 모달 -->
+<div id="dayDetailModal" class="modal">
+    <div class="modal-content wide">
+        <div class="modal-header">
+            <span id="dayDetailTitle"></span>
+            <span class="close-btn" onclick="closeDayDetail()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="dayDetailContent"></div>
+            <button class="btn-write-from-detail" onclick="closeDayDetail(); openModalToday()">내 성과 작성하기</button>
         </div>
     </div>
 </div>
@@ -469,7 +496,7 @@
             const card = document.createElement('div');
             card.className = 'submitter-card submitted';
             if (myName && item.name === myName) card.classList.add('me');
-            card.onclick = () => openModal(dateKey);
+            card.onclick = () => openDayDetail(dateKey);
             const memberInfo = dbData.members ? dbData.members.find(m => m.name === item.name) : null;
             const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`;
             card.innerHTML = `
@@ -487,7 +514,7 @@
                 if (!submittedNames.has(member.name)) {
                     const card = document.createElement('div');
                     card.className = 'submitter-card faint';
-                    card.onclick = () => openModal(dateKey);
+                    card.onclick = () => openDayDetail(dateKey);
                     const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
                     card.innerHTML = `
                         <span class="card-badge badge-none">미작성</span>
@@ -503,6 +530,86 @@
     function openModalToday() {
         const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()+1}-${currentDate.getDate()}`;
         openModal(dateKey);
+    }
+
+    function openDayDetail(date) {
+        const container = document.getElementById('dayDetailContent');
+        container.innerHTML = '';
+        document.getElementById('dayDetailTitle').innerText = `${date} 모두의 성과`;
+
+        // "내 성과 작성하기" 버튼의 날짜를 동적으로 설정
+        const writeBtn = document.querySelector('#dayDetailModal .btn-write-from-detail');
+        writeBtn.onclick = () => { closeDayDetail(); openModal(date); };
+
+        const todaysTasks = dbData.tasks ? dbData.tasks.filter(t => t.date === date) : [];
+        const submittedNames = new Set(todaysTasks.map(t => t.name));
+
+        // 작성한 멤버 카드
+        todaysTasks.forEach(t => {
+            const parsed = parseTaskContent(t.task);
+            const memberInfo = dbData.members ? dbData.members.find(m => m.name === t.name) : null;
+            const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${t.name}`;
+            const ratingNum = parseFloat(parsed.rating) || 0;
+            const stars = '★'.repeat(Math.round(ratingNum)) + '☆'.repeat(5 - Math.round(ratingNum));
+
+            let itemsHtml = '';
+            if (parsed.items) {
+                parsed.items.forEach(item => {
+                    let tagColor = '#95a5a6';
+                    if (item.category === '몰입') tagColor = '#e74c3c';
+                    if (item.category === '성장') tagColor = '#2ecc71';
+                    if (item.category === '일정') tagColor = '#3498db';
+                    if (item.category === '충전') tagColor = '#f1c40f';
+                    const textColor = item.category === '충전' ? 'color:#333;' : '';
+                    itemsHtml += `<div class="day-detail-item"><span class="day-detail-tag" style="background:${tagColor};${textColor}">${item.category}</span><span class="day-detail-content">${item.content}</span></div>`;
+                });
+            }
+
+            const card = document.createElement('div');
+            card.className = 'day-detail-card';
+            card.innerHTML = `
+                <div class="day-detail-profile">
+                    <img src="${avatarUrl}">
+                    <div class="profile-info">
+                        <div class="profile-name">${t.name}</div>
+                        <div class="profile-rating">${stars} ${parsed.rating || '0'}</div>
+                    </div>
+                </div>
+                <div class="day-detail-items">${itemsHtml}</div>
+            `;
+            container.appendChild(card);
+        });
+
+        // 미작성 멤버 카드
+        if (dbData.members) {
+            dbData.members.forEach(member => {
+                if (!submittedNames.has(member.name)) {
+                    const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
+                    const card = document.createElement('div');
+                    card.className = 'day-detail-card faint';
+                    card.innerHTML = `
+                        <div class="day-detail-profile">
+                            <img src="${avatarUrl}">
+                            <div class="profile-info">
+                                <div class="profile-name">${member.name}</div>
+                                <div class="profile-rating" style="color:#bdc3c7;">미작성</div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                }
+            });
+        }
+
+        if (todaysTasks.length === 0 && (!dbData.members || dbData.members.length === 0)) {
+            container.innerHTML = '<div style="text-align:center; color:#999; padding:30px;">기록이 없습니다.</div>';
+        }
+
+        document.getElementById('dayDetailModal').style.display = 'flex';
+    }
+
+    function closeDayDetail() {
+        document.getElementById('dayDetailModal').style.display = 'none';
     }
 
     function changeDay(offset) { currentDate.setDate(currentDate.getDate() + offset); renderWeeklyCalendar(); }
@@ -914,7 +1021,7 @@
     // --- 기존 공통 함수들 ---
     function addTaskItem(initialData = null) { const container = document.getElementById('taskItemsContainer'); const div = document.createElement('div'); div.className = 'input-row'; div.innerHTML = `<select class="type-select"><option value="몰입">몰입</option><option value="성장">성장</option><option value="일정">일정</option><option value="충전">충전</option><option value="기타">기타</option></select><input type="text" class="content-input" placeholder="내용을 입력하세요"><button class="btn-remove" onclick="this.parentElement.remove()">X</button>`; container.appendChild(div); if(initialData) { div.querySelector('.type-select').value = initialData.category; div.querySelector('.content-input').value = initialData.content; } }
 
-    function openModal(date) { selectedDateKey = date; const myName = document.getElementById('userName').value.trim(); document.getElementById('modalDateTitle').innerText = `${date} 기록`; const myTask = dbData.tasks ? dbData.tasks.find(t => t.date === date && t.name === myName) : null; const container = document.getElementById('taskItemsContainer'); container.innerHTML = ''; if (myTask) { const parsed = parseTaskContent(myTask.task); document.getElementById('inputRating').value = parsed.rating || "0.0"; if (parsed.items && parsed.items.length > 0) { parsed.items.forEach(item => addTaskItem(item)); } else { addTaskItem(); } } else { document.getElementById('inputRating').value = "0.0"; addTaskItem(); } const listEl = document.getElementById('othersList'); listEl.innerHTML = ''; const todaysTasks = dbData.tasks ? dbData.tasks.filter(t => t.date === date) : []; if(todaysTasks.length === 0) listEl.innerHTML = '<div style="text-align:center; color:#999; padding:10px;">기록 없음</div>'; else { todaysTasks.forEach(t => { const parsed = parseTaskContent(t.task); const detailDiv = document.createElement('div'); detailDiv.className = 'detail-card'; let itemsHtml = ''; parsed.items.forEach(item => { let typeClass = 'type-etc'; if(item.category === '몰입') typeClass = 'type-deep'; if(item.category === '성장') typeClass = 'type-grow'; if(item.category === '일정') typeClass = 'type-schedule'; if(item.category === '충전') typeClass = 'type-rest'; itemsHtml += `<div class="detail-item"><span class="detail-type ${typeClass}">${item.category}</span><span>${item.content}</span></div>`; }); detailDiv.innerHTML = `<div class="detail-header"><span>${t.name}</span>${parsed.rating ? `<span style="color:#f1c40f;">★ ${parsed.rating}</span>` : ''}</div><div>${itemsHtml}</div>`; listEl.appendChild(detailDiv); }); } document.getElementById('taskModal').style.display = 'flex'; }
+    function openModal(date) { selectedDateKey = date; const myName = document.getElementById('userName').value.trim(); document.getElementById('modalDateTitle').innerText = `${date} 성과 작성`; const myTask = dbData.tasks ? dbData.tasks.find(t => t.date === date && t.name === myName) : null; const container = document.getElementById('taskItemsContainer'); container.innerHTML = ''; if (myTask) { const parsed = parseTaskContent(myTask.task); document.getElementById('inputRating').value = parsed.rating || "0.0"; if (parsed.items && parsed.items.length > 0) { parsed.items.forEach(item => addTaskItem(item)); } else { addTaskItem(); } } else { document.getElementById('inputRating').value = "0.0"; addTaskItem(); } document.getElementById('taskModal').style.display = 'flex'; }
 
     function renderFeed() { const listEl = document.getElementById('feedList'); listEl.innerHTML = ''; if (!dbData.feeds || dbData.feeds.length === 0) { listEl.innerHTML = '<li style="text-align:center; padding:20px; color:#999;">첫 글을 남겨보세요!</li>'; return; } const myName = document.getElementById('userName').value.trim(); [...dbData.feeds].reverse().forEach(feed => { const li = document.createElement('li'); li.className = 'feed-item'; let content = feed.content; let imgHtml = ""; try { if(content.startsWith("{")) { const parsed = JSON.parse(content); content = parsed.text; if(parsed.img) imgHtml = `<img src="${parsed.img}" class="feed-img">`; } } catch(e) {} const myComments = dbData.comments ? dbData.comments.filter(c => c.feedId === feed.id) : []; let commentHtml = ''; myComments.forEach(c => { commentHtml += `<li class="comment-item"><span class="comment-author">${c.name}</span><span class="comment-content">${c.content}</span></li>`; }); const dateStr = new Date(feed.timestamp).toLocaleString();
     let actionBtns = "";
@@ -926,7 +1033,7 @@
     }
     li.innerHTML = `<div class="feed-header"><div><span style="font-weight:bold;">${feed.name}</span><span style="font-size:0.8em; color:#999; margin-left:8px;">${dateStr}</span></div><div>${actionBtns}</div></div>${imgHtml}<div style="white-space:pre-wrap;">${content}</div><div class="comment-section"><ul class="comment-list">${commentHtml}</ul><div style="display:flex; gap:5px;"><input type="text" id="commentInput-${feed.id}" placeholder="댓글 달기..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;"><button class="btn-submit" style="width:60px; padding:0; margin-top:0;" onclick="saveComment('${feed.id}')">등록</button></div></div>`; listEl.appendChild(li); }); }
 
-    function renderMembers() { const listEl = document.getElementById('memberList'); listEl.innerHTML = ''; if (!dbData.members || dbData.members.length === 0) { listEl.innerHTML = '<p style="text-align:center; color:#999;">멤버가 없습니다.</p>'; return; } dbData.members.forEach(member => { const div = document.createElement('div'); div.className = 'member-card'; const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`; const createdAt = member.createdAt ? new Date(member.createdAt).toLocaleDateString() : '초기 멤버'; div.innerHTML = `<img src="${avatarUrl}" class="member-avatar"><div class="member-name">${member.name}</div><div class="member-bio">${member.bio}</div><div style="font-size:0.8em; color:#aaa; margin-top:8px;">가입일: ${createdAt}</div>`; listEl.appendChild(div); }); }
+    function renderMembers() { const listEl = document.getElementById('memberList'); listEl.innerHTML = ''; if (!dbData.members || dbData.members.length === 0) { listEl.innerHTML = '<p style="text-align:center; color:#999;">멤버가 없습니다.</p>'; return; } dbData.members.forEach(member => { const div = document.createElement('div'); div.className = 'member-card'; const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`; div.innerHTML = `<img src="${avatarUrl}" class="member-avatar"><div class="member-name">${member.name}</div><div class="member-bio">${member.bio}</div>`; listEl.appendChild(div); }); }
     function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
@@ -942,6 +1049,7 @@
     function openTab(name, e) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active')); document.getElementById(name).classList.add('active'); e.currentTarget.classList.add('active'); if(name==='calendarTab') renderWeeklyCalendar(); if(name==='groupTab') renderGroupList(); }
     window.onclick = function(e) {
         if(e.target == document.getElementById('taskModal')) closeModal();
+        if(e.target == document.getElementById('dayDetailModal')) closeDayDetail();
         if(e.target == document.getElementById('dietModal')) document.getElementById('dietModal').style.display='none';
         if(e.target == document.getElementById('weeklyCalendarModal')) closeWeeklyCalendarModal();
         if(e.target == document.getElementById('createGroupModal')) closeCreateGroupModal();
