@@ -142,6 +142,8 @@
         .comment-author { color: #e74c3c; font-weight: bold; white-space: nowrap; }
         .comment-content { color: #555; word-break: break-all; }
 
+        .avatar-mode-btn { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+        .avatar-mode-btn.active { background: #e74c3c; color: #fff; border-color: #e74c3c; }
         .member-form { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #eee; display:flex; flex-direction: column; align-items: center; }
         .member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
         .member-card { background: white; border: 1px solid #eee; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -245,20 +247,36 @@
             <h4 style="margin-top:0;">내 캐릭터 만들기</h4>
             <div class="avatar-preview-container">
                 <img id="avatarPreview" src="" class="avatar-preview">
-                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-                    <select id="avatarStyle" onchange="updateAvatarPreview()" style="padding:5px;">
-                        <option value="notionists">노션 스타일</option>
-                        <option value="adventurer">모험가</option>
-                        <option value="bottts">로봇</option>
-                        <option value="avataaars">아바타</option>
-                        <option value="big-ears">큰 귀</option>
-                        <option value="lorelei">로렐라이</option>
-                        <option value="micah">미카</option>
-                        <option value="pixel-art">픽셀아트</option>
-                        <option value="thumbs">엄지척</option>
-                        <option value="fun-emoji">펀 이모지</option>
-                    </select>
-                    <button onclick="randomizeAvatar()" style="cursor:pointer;">랜덤</button>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <button onclick="setAvatarMode('random')" id="avatarModeRandom" class="avatar-mode-btn active" style="flex:1;">랜덤 생성</button>
+                    <button onclick="setAvatarMode('custom')" id="avatarModeCustom" class="avatar-mode-btn" style="flex:1;">직접 입력</button>
+                </div>
+                <div id="avatarRandomSection">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+                        <select id="avatarStyle" onchange="updateAvatarPreview()" style="padding:5px;">
+                            <option value="notionists">노션 스타일</option>
+                            <option value="adventurer">모험가</option>
+                            <option value="bottts">로봇</option>
+                            <option value="avataaars">아바타</option>
+                            <option value="big-ears">큰 귀</option>
+                            <option value="lorelei">로렐라이</option>
+                            <option value="micah">미카</option>
+                            <option value="pixel-art">픽셀아트</option>
+                            <option value="thumbs">엄지척</option>
+                            <option value="fun-emoji">펀 이모지</option>
+                        </select>
+                        <button onclick="randomizeAvatar()" style="cursor:pointer;">랜덤</button>
+                    </div>
+                </div>
+                <div id="avatarCustomSection" style="display:none; width:100%;">
+                    <input type="text" id="customAvatarUrl" placeholder="이미지 URL을 붙여넣기..." oninput="previewCustomAvatar()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; margin-bottom:8px;">
+                    <div style="font-size:0.8em; color:#888; line-height:1.5;">
+                        아래 사이트에서 아바타를 커스텀한 후 URL을 복사하세요:<br>
+                        <a href="https://www.dicebear.com/playground/" target="_blank" style="color:#e74c3c;">DiceBear Playground</a> - 다양한 스타일의 아바타 커스터마이징<br>
+                        <a href="https://notion-avatar.vercel.app/" target="_blank" style="color:#e74c3c;">Notion Avatar Maker</a> - 노션 스타일 아바타<br>
+                        <a href="https://robohash.org/" target="_blank" style="color:#e74c3c;">RoboHash</a> - 로봇/몬스터 아바타 (예: robohash.org/내이름)<br>
+                        <span style="color:#aaa;">또는 아무 이미지 URL 사용 가능</span>
+                    </div>
                 </div>
             </div>
             <textarea id="inputBio" placeholder="자기소개..."></textarea>
@@ -417,6 +435,16 @@
                 renderMembers();
                 renderGroupList();
                 if(currentGroup) enterGroup(currentGroup);
+                // 기존 멤버의 아바타가 커스텀 URL이면 복원
+                const savedName = document.getElementById('userName').value.trim();
+                if (savedName && dbData.members) {
+                    const me = dbData.members.find(m => m.name === savedName);
+                    if (me && me.avatar && !me.avatar.includes('api.dicebear.com')) {
+                        document.getElementById('customAvatarUrl').value = me.avatar;
+                        setAvatarMode('custom');
+                    }
+                    if (me && me.bio) document.getElementById('inputBio').value = me.bio;
+                }
                 loadingEl.style.display = 'none';
             })
             .catch(e => { console.error(e); loadingEl.style.display='none'; });
@@ -902,10 +930,13 @@
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
-    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); const avatarUrl = document.getElementById('avatarPreview').src; if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
+    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
     function parseTaskContent(taskStr) { try { if (taskStr.trim().startsWith("{")) return JSON.parse(taskStr); } catch (e) {} return { rating: null, items: [{ category: '기존', content: taskStr }] }; }
     function updateAvatarPreview() { const style = document.getElementById('avatarStyle').value; const seed = currentAvatarSeed || "default"; document.getElementById('avatarPreview').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`; }
     function randomizeAvatar() { currentAvatarSeed = Math.random().toString(36).substring(7); updateAvatarPreview(); }
+    let currentAvatarMode = 'random';
+    function setAvatarMode(mode) { currentAvatarMode = mode; document.getElementById('avatarModeRandom').classList.toggle('active', mode === 'random'); document.getElementById('avatarModeCustom').classList.toggle('active', mode === 'custom'); document.getElementById('avatarRandomSection').style.display = mode === 'random' ? '' : 'none'; document.getElementById('avatarCustomSection').style.display = mode === 'custom' ? '' : 'none'; if (mode === 'random') updateAvatarPreview(); }
+    function previewCustomAvatar() { const url = document.getElementById('customAvatarUrl').value.trim(); if (url) { document.getElementById('avatarPreview').src = url; } }
     function closeModal() { document.getElementById('taskModal').style.display = 'none'; }
     function openTab(name, e) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active')); document.getElementById(name).classList.add('active'); e.currentTarget.classList.add('active'); if(name==='calendarTab') renderWeeklyCalendar(); if(name==='groupTab') renderGroupList(); }
     window.onclick = function(e) {
