@@ -59,7 +59,9 @@
         .submitter-card .card-badge { position: absolute; top: 6px; right: 6px; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
         .submitter-card .badge-done { background: #2ecc71; color: #fff; }
         .submitter-card .badge-none { background: #bdc3c7; color: #fff; }
-        .rating-badge { font-weight: bold; color: #f1c40f; font-size: 0.9em; }
+        .rating-badge { font-weight: bold; font-size: 0.9em; }
+        .star-rating { position: relative; display: inline-block; color: #ddd; white-space: nowrap; }
+        .star-rating .star-fill { position: absolute; left: 0; top: 0; overflow: hidden; color: #f1c40f; white-space: nowrap; }
 
         /* 주간 달력 모달 */
         .week-grid-modal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
@@ -547,7 +549,7 @@
                 <span class="card-badge badge-done">작성완료</span>
                 <img src="${avatarUrl}" class="card-avatar">
                 <span class="card-name">${item.name}</span>
-                <span class="rating-badge">${'★'.repeat(Math.round(parseFloat(parsed.rating)||0))}${'☆'.repeat(5 - Math.round(parseFloat(parsed.rating)||0))} ${parsed.rating || '0'}</span>
+                <span class="rating-badge">${renderStars(parsed.rating)}</span>
             `;
             grid.appendChild(card);
         });
@@ -593,9 +595,6 @@
             const parsed = parseTaskContent(t.task);
             const memberInfo = dbData.members ? dbData.members.find(m => m.name === t.name) : null;
             const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${t.name}`;
-            const ratingNum = parseFloat(parsed.rating) || 0;
-            const stars = '★'.repeat(Math.round(ratingNum)) + '☆'.repeat(5 - Math.round(ratingNum));
-
             let itemsHtml = '';
             if (parsed.items) {
                 parsed.items.forEach(item => {
@@ -616,7 +615,7 @@
                     <img src="${avatarUrl}">
                     <div class="profile-info">
                         <div class="profile-name">${t.name}</div>
-                        <div class="profile-rating">${stars} ${parsed.rating || '0'}</div>
+                        <div class="profile-rating">${renderStars(parsed.rating)}</div>
                     </div>
                 </div>
                 <div class="day-detail-items">${itemsHtml}</div>
@@ -1085,6 +1084,7 @@
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); localStorage.setItem('study_profile_' + name, JSON.stringify({ bio: bio, avatar: avatarUrl, createdAt: createdAt })); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
+    function renderStars(rating) { const r = parseFloat(rating) || 0; const pct = Math.min(r / 5 * 100, 100); return `<span class="star-rating"><span>★★★★★</span><span class="star-fill" style="width:${pct}%">★★★★★</span></span> ${rating || '0'}`; }
     function parseTaskContent(taskStr) { try { if (taskStr.trim().startsWith("{")) return JSON.parse(taskStr); } catch (e) {} return { rating: null, items: [{ category: '기존', content: taskStr }] }; }
     function updateAvatarPreview() { const style = document.getElementById('avatarStyle').value; const seed = currentAvatarSeed || "default"; document.getElementById('avatarPreview').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`; }
     function randomizeAvatar() { currentAvatarSeed = Math.random().toString(36).substring(7); updateAvatarPreview(); }
