@@ -459,18 +459,50 @@
                 dbData = data;
                 if(!dbData.groups) dbData.groups = [];
                 if(!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
+                // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지)
+                if (dbData.members && dbData.members.length > 0) {
+                    const memberMap = {};
+                    dbData.members.forEach(m => { memberMap[m.name] = m; });
+                    dbData.members = Object.values(memberMap);
+                }
                 renderWeeklyCalendar();
                 renderFeed();
                 renderMembers();
                 renderGroupList();
                 if(currentGroup) enterGroup(currentGroup);
-                // 기존 멤버의 아바타가 커스텀 URL이면 복원
+                // 기존 멤버의 프로필 폼 복원 (서버 데이터 우선, localStorage 백업)
                 const savedName = document.getElementById('userName').value.trim();
-                if (savedName && dbData.members) {
-                    const me = dbData.members.find(m => m.name === savedName);
-                    if (me && me.avatar && !me.avatar.includes('api.dicebear.com')) {
-                        document.getElementById('customAvatarUrl').value = me.avatar;
-                        setAvatarMode('custom');
+                if (savedName) {
+                    let me = dbData.members ? dbData.members.find(m => m.name === savedName) : null;
+                    // 서버에 데이터가 없으면 localStorage에서 복원
+                    if (!me || (!me.bio && !me.avatar)) {
+                        const localProfile = localStorage.getItem('study_profile_' + savedName);
+                        if (localProfile) {
+                            const lp = JSON.parse(localProfile);
+                            if (!me) {
+                                me = { name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt };
+                                if(!dbData.members) dbData.members = [];
+                                dbData.members.push(me);
+                                renderMembers();
+                            } else {
+                                if (!me.bio && lp.bio) me.bio = lp.bio;
+                                if (!me.avatar && lp.avatar) me.avatar = lp.avatar;
+                            }
+                        }
+                    }
+                    if (me && me.avatar) {
+                        if (me.avatar.includes('api.dicebear.com')) {
+                            // DiceBear 아바타: 스타일과 시드 복원
+                            const styleMatch = me.avatar.match(/7\.x\/([^/]+)\//);
+                            const seedMatch = me.avatar.match(/seed=([^&]*)/);
+                            if (styleMatch) document.getElementById('avatarStyle').value = styleMatch[1];
+                            if (seedMatch) currentAvatarSeed = decodeURIComponent(seedMatch[1]);
+                            setAvatarMode('random');
+                            updateAvatarPreview();
+                        } else {
+                            document.getElementById('customAvatarUrl').value = me.avatar;
+                            setAvatarMode('custom');
+                        }
                     }
                     if (me && me.bio) document.getElementById('inputBio').value = me.bio;
                 }
@@ -1052,7 +1084,7 @@
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
-    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
+    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); localStorage.setItem('study_profile_' + name, JSON.stringify({ bio: bio, avatar: avatarUrl, createdAt: createdAt })); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
     function parseTaskContent(taskStr) { try { if (taskStr.trim().startsWith("{")) return JSON.parse(taskStr); } catch (e) {} return { rating: null, items: [{ category: '기존', content: taskStr }] }; }
     function updateAvatarPreview() { const style = document.getElementById('avatarStyle').value; const seed = currentAvatarSeed || "default"; document.getElementById('avatarPreview').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`; }
     function randomizeAvatar() { currentAvatarSeed = Math.random().toString(36).substring(7); updateAvatarPreview(); }
