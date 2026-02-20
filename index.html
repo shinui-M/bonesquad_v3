@@ -214,6 +214,7 @@
             <div class="calendar-toolbar-left">
                 <button class="btn-toolbar" onclick="openWeeklyCalendarModal()">주간 달력</button>
                 <button class="btn-toolbar" onclick="loadData()">새로고침</button>
+                <button class="btn-toolbar" onclick="goToToday()">오늘</button>
             </div>
             <div class="calendar-toolbar-center">
                 <button class="btn-move" onclick="changeDay(-1)">&lsaquo;</button>
@@ -624,6 +625,7 @@
     }
 
     function changeDay(offset) { currentDate.setDate(currentDate.getDate() + offset); renderWeeklyCalendar(); }
+    function goToToday() { currentDate = new Date(); renderWeeklyCalendar(); }
 
     // ==================== 주간 달력 모달 ====================
     function openWeeklyCalendarModal() {
