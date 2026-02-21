@@ -46,17 +46,24 @@
         .btn-toolbar.primary:hover { background: #c0392b; }
         .btn-move { background: none; border: none; color: #e74c3c; font-size: 1.3em; cursor: pointer; padding: 0 8px; }
 
-        /* 멤버 프로필 카드 그리드 */
-        .weekly-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%; box-sizing: border-box; }
+        /* 작성 현황 요약 */
+        .calendar-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 10px 14px; background: #f8f9fa; border-radius: 10px; font-size: 0.95em; color: #555; }
+        .calendar-summary .summary-count { font-weight: bold; color: #2ecc71; font-size: 1.1em; }
+        .calendar-summary .summary-bar { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+        .calendar-summary .summary-bar-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); border-radius: 4px; transition: width 0.3s; }
 
-        .submitter-card { background: #fff; border: 2px solid #eee; padding: 15px 10px; border-radius: 12px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; text-align: center; position: relative; }
-        .submitter-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* 멤버 프로필 카드 그리드 */
+        .weekly-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box; }
+
+        .submitter-card { background: #fff; border: 2px solid #eee; padding: 12px 16px; border-radius: 12px; font-size: 0.95em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: row; align-items: center; gap: 14px; transition: 0.2s; cursor: pointer; position: relative; }
+        .submitter-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .submitter-card.me { border-color: #e74c3c; background: #fff0f0; }
         .submitter-card.submitted { border-color: #2ecc71; }
-        .submitter-card.faint { opacity: 0.6; filter: grayscale(50%); background: #f8f8f8; border: 2px dashed #ccc; box-shadow: none; }
-        .submitter-card .card-avatar { width: 50px; height: 50px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid #f0f0f0; }
-        .submitter-card .card-name { font-weight: bold; font-size: 0.95em; color: #333; }
-        .submitter-card .card-badge { position: absolute; top: 6px; right: 6px; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
+        .submitter-card.faint { opacity: 0.55; filter: grayscale(50%); background: #f8f8f8; border: 2px dashed #ccc; box-shadow: none; }
+        .submitter-card .card-avatar { width: 48px; height: 48px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid #f0f0f0; flex-shrink: 0; }
+        .submitter-card .card-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+        .submitter-card .card-name { font-weight: bold; font-size: 1.05em; color: #333; }
+        .submitter-card .card-badge { font-size: 0.75em; padding: 3px 8px; border-radius: 10px; font-weight: bold; margin-left: auto; flex-shrink: 0; }
         .submitter-card .badge-done { background: #2ecc71; color: #fff; }
         .submitter-card .badge-none { background: #bdc3c7; color: #fff; }
         .rating-badge { font-weight: bold; font-size: 0.9em; }
@@ -182,7 +189,10 @@
             .calendar-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
             .calendar-toolbar-left, .calendar-toolbar-center, .calendar-toolbar-right { justify-content: center; }
             .btn-move { font-size: 1.2em; padding: 0 10px; }
-            .weekly-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+            .weekly-grid { gap: 8px; }
+            .submitter-card { padding: 10px 12px; gap: 10px; }
+            .submitter-card .card-avatar { width: 40px; height: 40px; }
+            .submitter-card .card-name { font-size: 0.95em; }
             .member-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .week-grid-modal { gap: 2px; }
             .week-day-col { padding: 4px 2px; min-height: 70px; }
@@ -226,6 +236,11 @@
             <div class="calendar-toolbar-right">
                 <button class="btn-toolbar primary" onclick="openModalToday()">성과 작성</button>
             </div>
+        </div>
+        <div id="calendarSummary" class="calendar-summary" style="display:none;">
+            <span>오늘의 작성 현황</span>
+            <span class="summary-count" id="summaryCount"></span>
+            <div class="summary-bar"><div class="summary-bar-fill" id="summaryBarFill"></div></div>
         </div>
         <div class="weekly-grid" id="weeklyCalendar"></div>
     </div>
@@ -535,6 +550,26 @@
         const todaysTasks = dbData.tasks ? dbData.tasks.filter(t => t.date === dateKey) : [];
         const submittedNames = new Set(todaysTasks.map(t => t.name));
 
+        // 미작성 대상 멤버 수 계산
+        let eligibleCount = submittedNames.size;
+        if (dbData.members) {
+            dbData.members.forEach(member => {
+                if (!submittedNames.has(member.name) && !isBeforeFirstTask(member.name, dateKey)) {
+                    eligibleCount++;
+                }
+            });
+        }
+
+        // 작성 현황 요약 바
+        const summaryEl = document.getElementById('calendarSummary');
+        if (eligibleCount > 0) {
+            summaryEl.style.display = 'flex';
+            document.getElementById('summaryCount').textContent = `${submittedNames.size} / ${eligibleCount}명`;
+            document.getElementById('summaryBarFill').style.width = `${(submittedNames.size / eligibleCount) * 100}%`;
+        } else {
+            summaryEl.style.display = 'none';
+        }
+
         // 작성한 사람 카드
         todaysTasks.forEach(item => {
             let parsed = parseTaskContent(item.task);
@@ -545,10 +580,12 @@
             const memberInfo = dbData.members ? dbData.members.find(m => m.name === item.name) : null;
             const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`;
             card.innerHTML = `
-                <span class="card-badge badge-done">작성완료</span>
                 <img src="${avatarUrl}" class="card-avatar">
-                <span class="card-name">${item.name}</span>
-                <span class="rating-badge">${renderStars(parsed.rating)}</span>
+                <div class="card-info">
+                    <span class="card-name">${item.name}</span>
+                    <span class="rating-badge">${renderStars(parsed.rating)}</span>
+                </div>
+                <span class="card-badge badge-done">작성완료</span>
             `;
             grid.appendChild(card);
         });
@@ -562,9 +599,11 @@
                     card.onclick = () => openDayDetail(dateKey);
                     const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
                     card.innerHTML = `
-                        <span class="card-badge badge-none">미작성</span>
                         <img src="${avatarUrl}" class="card-avatar">
-                        <span class="card-name">${member.name}</span>
+                        <div class="card-info">
+                            <span class="card-name">${member.name}</span>
+                        </div>
+                        <span class="card-badge badge-none">미작성</span>
                     `;
                     grid.appendChild(card);
                 }
