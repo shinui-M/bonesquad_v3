@@ -85,8 +85,6 @@
         .group-info { padding: 20px; }
         .group-title { font-weight: bold; font-size: 1.2em; margin-bottom: 5px; color: #333; }
         .group-desc { color: #666; font-size: 0.9em; }
-        .group-card .btn-group-delete { position: absolute; top: 8px; right: 8px; background: rgba(231,76,60,0.9); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 1em; display: flex; align-items: center; justify-content: center; z-index: 5; }
-        .group-card .btn-group-delete:hover { background: #c0392b; }
 
         #groupDetailView { display: none; }
         .group-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
@@ -759,10 +757,7 @@
             card.className = 'group-card';
             card.onclick = () => enterGroup(g.name);
 
-            let deleteBtn = `<button class="btn-group-delete" onclick="event.stopPropagation(); deleteGroup('${g.id}')" title="그룹 삭제">&times;</button>`;
-
             card.innerHTML = `
-                ${deleteBtn}
                 <div class="group-img">${g.emoji || '📁'}</div>
                 <div class="group-info">
                     <div class="group-title">${g.name}</div>
@@ -772,19 +767,6 @@
             container.appendChild(card);
         });
 
-    }
-
-    function deleteGroup(id) {
-        if (!confirm("정말 이 그룹을 삭제하시겠습니까?")) return;
-        const name = document.getElementById('userName').value.trim();
-        if (id.startsWith('default_')) {
-            if (!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
-            dbData.deletedDefaultGroups.push(id);
-        } else {
-            dbData.groups = dbData.groups.filter(g => g.id !== id);
-        }
-        renderGroupList();
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteGroup', id: id, name: name }) });
     }
 
     function enterGroup(groupName) {
