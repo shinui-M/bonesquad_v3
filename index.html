@@ -101,28 +101,40 @@
         .schedule-toolbar { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 16px; padding: 10px 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; flex-wrap: wrap; }
         .schedule-toolbar .btn-toolbar { background: #fff; border: 1px solid #ddd; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; }
         .schedule-toolbar .btn-toolbar:hover { border-color: #e74c3c; color: #e74c3c; }
-        .schedule-table-wrap { overflow-x: auto; margin-bottom: 20px; -webkit-overflow-scrolling: touch; }
-        .schedule-table { width: 100%; min-width: 560px; border-collapse: collapse; table-layout: fixed; }
+        .schedule-table-wrap { overflow-x: auto; margin-bottom: 20px; -webkit-overflow-scrolling: touch; position: relative; }
+        .schedule-table { width: 100%; min-width: 500px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
         .schedule-table th { background: #f0f0f0; padding: 8px 4px; font-size: 0.85em; text-align: center; border: 1px solid #ddd; }
+        .schedule-table th:first-child { position: sticky; left: 0; z-index: 3; background: #f0f0f0; border-right: 2px solid #ccc; }
         .schedule-table th.today-col { background: #fff0f0; color: #e74c3c; }
-        .schedule-table td { padding: 4px; text-align: center; border: 1px solid #eee; cursor: pointer; vertical-align: top; min-height: 32px; transition: background 0.15s; font-size: 0.8em; }
-        .schedule-table td:first-child { cursor: default; background: #fafafa; font-weight: bold; font-size: 0.8em; color: #666; min-width: 52px; }
-        .schedule-table td:hover:not(:first-child) { background: #f5f5f5; }
+        .schedule-table td { padding: 0; text-align: center; border: 1px solid #eee; cursor: pointer; vertical-align: middle; height: 36px; transition: background 0.15s; font-size: 0.8em; position: relative; }
+        .schedule-table td:first-child { cursor: default; background: #fafafa; font-weight: bold; font-size: 0.8em; color: #666; width: 52px; min-width: 52px; max-width: 52px; position: sticky; left: 0; z-index: 2; border-right: 2px solid #ccc; }
+        .schedule-table td:hover:not(:first-child) { outline: 2px solid #e74c3c; outline-offset: -2px; z-index: 1; }
         .schedule-table td.my-selected { background: #d5f5e3; }
-        .schedule-name-badge { display: inline-block; padding: 1px 5px; border-radius: 8px; font-size: 0.7em; margin: 1px; }
-        .schedule-name-badge.me { background: #e74c3c; color: #fff; }
-        .schedule-name-badge.other { background: #eee; color: #555; }
-        .schedule-count-badge { display: inline-block; background: #3498db; color: #fff; padding: 1px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold; margin: 1px; }
+        .schedule-cell { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; min-height: 36px; }
+        .schedule-cell-count { font-weight: bold; font-size: 0.85em; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .schedule-cell-dot { width: 8px; height: 8px; border-radius: 50%; background: #e74c3c; }
+        .schedule-cell-tooltip { display: none; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 0.75em; white-space: nowrap; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
+        .schedule-cell-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #2c3e50; }
+        .schedule-table td:hover .schedule-cell-tooltip, .schedule-table td:active .schedule-cell-tooltip { display: block; }
+        .schedule-heat-1 { background: #e8f8f5; }
+        .schedule-heat-2 { background: #a9dfbf; }
+        .schedule-heat-3 { background: #52be80; }
+        .schedule-heat-4 { background: #27ae60; }
+        .schedule-heat-5 { background: #1e8449; }
         .schedule-summary { background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
         .schedule-summary h4 { margin: 0 0 10px 0; color: #333; font-size: 1em; }
         .schedule-best-slot { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #fff; border-radius: 8px; margin-bottom: 6px; border: 1px solid #eee; font-size: 0.9em; }
         .schedule-best-slot .slot-time { font-weight: bold; color: #2c3e50; }
         .schedule-best-slot .slot-count { color: #3498db; font-weight: bold; }
         .schedule-best-slot .slot-names { color: #888; font-size: 0.85em; }
+        .schedule-legend { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-bottom: 8px; font-size: 0.75em; color: #888; }
+        .schedule-legend-box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ddd; }
 
         @media (max-width: 768px) {
-            .schedule-table { min-width: 480px; }
-            .schedule-table th, .schedule-table td { padding: 3px 2px; font-size: 0.75em; }
+            .schedule-table { min-width: 400px; }
+            .schedule-table th, .schedule-table td { font-size: 0.75em; }
+            .schedule-table td { height: 32px; }
+            .schedule-table td:first-child { width: 44px; min-width: 44px; max-width: 44px; font-size: 0.7em; }
         }
 
         /* 다이어트 로그 */
@@ -804,6 +816,18 @@
                     <button class="btn-move" onclick="changeScheduleWeek(1)">&rsaquo;</button>
                     <button class="btn-toolbar" onclick="scheduleWeekDate=new Date(); renderScheduleGrid();">이번 주</button>
                 </div>
+                <div class="schedule-legend">
+                    <span>적음</span>
+                    <div class="schedule-legend-box schedule-heat-1"></div>
+                    <div class="schedule-legend-box schedule-heat-2"></div>
+                    <div class="schedule-legend-box schedule-heat-3"></div>
+                    <div class="schedule-legend-box schedule-heat-4"></div>
+                    <div class="schedule-legend-box schedule-heat-5"></div>
+                    <span>많음</span>
+                    &nbsp;
+                    <div class="schedule-legend-box" style="background:#d5f5e3;"></div>
+                    <span>내 선택</span>
+                </div>
                 <div class="schedule-table-wrap">
                     <table class="schedule-table" id="scheduleTable"></table>
                 </div>
@@ -1010,8 +1034,11 @@
         const table = document.getElementById('scheduleTable');
         if (!table) return;
 
+        // 전체 멤버 수 (열 강도 계산용)
+        const totalMembers = dbData.groupMembers ? dbData.groupMembers.filter(m => m.groupName === '오픽 스터디').length : 1;
+
         // 헤더
-        let headerHtml = '<thead><tr><th style="width:52px;">시간</th>';
+        let headerHtml = '<thead><tr><th>시간</th>';
         weekDates.forEach((dk, i) => {
             const d = parseDateKey(dk);
             const isToday = dk === todayKey;
@@ -1019,7 +1046,7 @@
         });
         headerHtml += '</tr></thead>';
 
-        // 바디
+        // 바디 — 히트맵 스타일
         let bodyHtml = '<tbody>';
         hours.forEach(slot => {
             bodyHtml += `<tr><td>${slot}</td>`;
@@ -1027,19 +1054,30 @@
                 const key = `${dk}|${slot}`;
                 const names = slotMap[key] || [];
                 const isMySelected = mySlots[dk] && mySlots[dk].includes(slot);
-                let cellClass = isMySelected ? 'my-selected' : '';
-                let cellContent = '';
+                const count = names.length;
 
-                names.forEach(name => {
-                    if (name === myName) {
-                        cellContent += `<span class="schedule-name-badge me">${name}</span>`;
-                    } else {
-                        cellContent += `<span class="schedule-name-badge other">${name}</span>`;
-                    }
-                });
-                if (names.length > 1) {
-                    cellContent += `<span class="schedule-count-badge">${names.length}명</span>`;
+                // 히트맵 색상 클래스
+                let heatClass = '';
+                if (count > 0) {
+                    const level = Math.min(5, Math.ceil(count / Math.max(1, totalMembers) * 5) || 1);
+                    heatClass = `schedule-heat-${level}`;
                 }
+                let cellClass = isMySelected ? 'my-selected' : heatClass;
+
+                // 셀 내용 — 간결하게 표시
+                let cellContent = '<div class="schedule-cell">';
+                if (count === 0 && !isMySelected) {
+                    cellContent += '';
+                } else if (count === 1 && isMySelected && names.length === 1 && names[0] === myName) {
+                    cellContent += '<div class="schedule-cell-dot"></div>';
+                } else if (count > 0) {
+                    cellContent += `<span class="schedule-cell-count" style="color:${count >= 3 ? '#fff' : '#2c3e50'}; text-shadow:${count >= 3 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none'}">${count}</span>`;
+                }
+                // 툴팁 (이름 목록)
+                if (count > 0) {
+                    cellContent += `<div class="schedule-cell-tooltip">${names.join(', ')}</div>`;
+                }
+                cellContent += '</div>';
 
                 bodyHtml += `<td class="${cellClass}" onclick="toggleScheduleSlot('${dk}','${slot}')">${cellContent}</td>`;
             });
