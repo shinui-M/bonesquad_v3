@@ -87,10 +87,6 @@
         .group-desc { color: #666; font-size: 0.9em; }
         .group-card .btn-group-delete { position: absolute; top: 8px; right: 8px; background: rgba(231,76,60,0.9); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 1em; display: flex; align-items: center; justify-content: center; z-index: 5; }
         .group-card .btn-group-delete:hover { background: #c0392b; }
-        .btn-create-group { border: 2px dashed #ccc; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 220px; cursor: pointer; transition: 0.3s; background: #fafafa; color: #999; }
-        .btn-create-group:hover { border-color: #e74c3c; color: #e74c3c; background: #fff5f5; }
-        .btn-create-group .create-icon { font-size: 2.5em; margin-bottom: 8px; }
-        .btn-create-group .create-text { font-weight: bold; font-size: 1em; }
 
         #groupDetailView { display: none; }
         .group-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
@@ -100,6 +96,34 @@
         .member-badge img { width: 20px; height: 20px; border-radius: 50%; margin-right: 5px; }
         .btn-join { background: #2ecc71; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-left: auto; font-weight: bold; }
         .btn-leave { background: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-left: auto; font-weight: bold; }
+
+        /* 스케줄 선택기 */
+        .schedule-toolbar { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 16px; padding: 10px 15px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; flex-wrap: wrap; }
+        .schedule-toolbar .btn-toolbar { background: #fff; border: 1px solid #ddd; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: 0.2s; }
+        .schedule-toolbar .btn-toolbar:hover { border-color: #e74c3c; color: #e74c3c; }
+        .schedule-table-wrap { overflow-x: auto; margin-bottom: 20px; -webkit-overflow-scrolling: touch; }
+        .schedule-table { width: 100%; min-width: 560px; border-collapse: collapse; table-layout: fixed; }
+        .schedule-table th { background: #f0f0f0; padding: 8px 4px; font-size: 0.85em; text-align: center; border: 1px solid #ddd; }
+        .schedule-table th.today-col { background: #fff0f0; color: #e74c3c; }
+        .schedule-table td { padding: 4px; text-align: center; border: 1px solid #eee; cursor: pointer; vertical-align: top; min-height: 32px; transition: background 0.15s; font-size: 0.8em; }
+        .schedule-table td:first-child { cursor: default; background: #fafafa; font-weight: bold; font-size: 0.8em; color: #666; min-width: 52px; }
+        .schedule-table td:hover:not(:first-child) { background: #f5f5f5; }
+        .schedule-table td.my-selected { background: #d5f5e3; }
+        .schedule-name-badge { display: inline-block; padding: 1px 5px; border-radius: 8px; font-size: 0.7em; margin: 1px; }
+        .schedule-name-badge.me { background: #e74c3c; color: #fff; }
+        .schedule-name-badge.other { background: #eee; color: #555; }
+        .schedule-count-badge { display: inline-block; background: #3498db; color: #fff; padding: 1px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold; margin: 1px; }
+        .schedule-summary { background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #eee; }
+        .schedule-summary h4 { margin: 0 0 10px 0; color: #333; font-size: 1em; }
+        .schedule-best-slot { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #fff; border-radius: 8px; margin-bottom: 6px; border: 1px solid #eee; font-size: 0.9em; }
+        .schedule-best-slot .slot-time { font-weight: bold; color: #2c3e50; }
+        .schedule-best-slot .slot-count { color: #3498db; font-weight: bold; }
+        .schedule-best-slot .slot-names { color: #888; font-size: 0.85em; }
+
+        @media (max-width: 768px) {
+            .schedule-table { min-width: 480px; }
+            .schedule-table th, .schedule-table td { padding: 3px 2px; font-size: 0.75em; }
+        }
 
         /* 다이어트 로그 */
         .diet-card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; overflow: hidden; background: #fff; }
@@ -382,41 +406,6 @@
     </div>
 </div>
 
-<!-- 그룹 생성 모달 -->
-<div id="createGroupModal" class="modal">
-    <div class="modal-content" style="width:450px;">
-        <div class="modal-header">
-            <span>새 그룹 만들기</span>
-            <span class="close-btn" onclick="closeCreateGroupModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div class="input-group">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">그룹 이름</label>
-                <input type="text" id="newGroupName" placeholder="그룹 이름을 입력하세요">
-            </div>
-            <div class="input-group">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">그룹 설명</label>
-                <input type="text" id="newGroupDesc" placeholder="그룹 설명을 입력하세요">
-            </div>
-            <div class="input-group">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">이모지</label>
-                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">📚</button>
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">💻</button>
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">🎨</button>
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">🏋️</button>
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">🎵</button>
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">🔬</button>
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">🌍</button>
-                    <button class="emoji-pick" onclick="document.getElementById('newGroupEmoji').value=this.innerText" style="font-size:1.5em; background:none; border:1px solid #eee; border-radius:6px; padding:4px 8px; cursor:pointer;">🧮</button>
-                </div>
-                <input type="text" id="newGroupEmoji" placeholder="이모지 직접 입력 또는 위에서 선택" style="width:120px;">
-            </div>
-            <button class="btn-submit" onclick="createGroup()">그룹 만들기</button>
-        </div>
-    </div>
-</div>
-
 <script>
     let currentDate = new Date();
     let weekModalDate = new Date();
@@ -424,6 +413,7 @@
     let selectedDateKey = null;
     let currentAvatarSeed = "";
     let currentGroup = null;
+    let scheduleWeekDate = new Date();
 
     // 기본 그룹 (삭제 불가)
     const DEFAULT_GROUPS = [
@@ -770,55 +760,6 @@
             container.appendChild(card);
         });
 
-        // "+ 새 그룹 만들기" 버튼
-        const createBtn = document.createElement('div');
-        createBtn.className = 'btn-create-group';
-        createBtn.onclick = () => openCreateGroupModal();
-        createBtn.innerHTML = `<div class="create-icon">+</div><div class="create-text">새 그룹 만들기</div>`;
-        container.appendChild(createBtn);
-    }
-
-    function openCreateGroupModal() {
-        const name = document.getElementById('userName').value.trim();
-        if(!name) { alert("이름을 먼저 입력하세요."); return; }
-        document.getElementById('newGroupName').value = '';
-        document.getElementById('newGroupDesc').value = '';
-        document.getElementById('newGroupEmoji').value = '';
-        document.getElementById('createGroupModal').style.display = 'flex';
-    }
-
-    function closeCreateGroupModal() {
-        document.getElementById('createGroupModal').style.display = 'none';
-    }
-
-    function createGroup() {
-        const name = document.getElementById('userName').value.trim();
-        const groupName = document.getElementById('newGroupName').value.trim();
-        const groupDesc = document.getElementById('newGroupDesc').value.trim();
-        const groupEmoji = document.getElementById('newGroupEmoji').value.trim() || '📁';
-
-        if (!groupName) { alert("그룹 이름을 입력하세요."); return; }
-
-        const allGroups = getAllGroups();
-        if (allGroups.some(g => g.name === groupName)) {
-            alert("같은 이름의 그룹이 이미 있습니다.");
-            return;
-        }
-
-        const newGroup = {
-            id: 'grp_' + Date.now(),
-            name: groupName,
-            desc: groupDesc,
-            emoji: groupEmoji,
-            creator: name
-        };
-
-        if (!dbData.groups) dbData.groups = [];
-        dbData.groups.push(newGroup);
-        renderGroupList();
-        closeCreateGroupModal();
-
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createGroup', ...newGroup }) });
     }
 
     function deleteGroup(id) {
@@ -854,8 +795,23 @@
                 <div id="dietLogList"></div>
             `;
             renderDietLogs();
+        } else if (groupName === '오픽 스터디') {
+            // 오픽 스터디 → 주간 스케줄 선택기
+            contentArea.innerHTML = `
+                <div class="schedule-toolbar">
+                    <button class="btn-move" onclick="changeScheduleWeek(-1)">&lsaquo;</button>
+                    <span id="scheduleWeekRange" style="font-weight:bold; font-size:1.1em;"></span>
+                    <button class="btn-move" onclick="changeScheduleWeek(1)">&rsaquo;</button>
+                    <button class="btn-toolbar" onclick="scheduleWeekDate=new Date(); renderScheduleGrid();">이번 주</button>
+                </div>
+                <div class="schedule-table-wrap">
+                    <table class="schedule-table" id="scheduleTable"></table>
+                </div>
+                <div class="schedule-summary" id="scheduleSummary"></div>
+            `;
+            renderScheduleGrid();
         } else {
-            // 모든 다른 그룹 (오픽 스터디 + 동적 그룹) → 게시판 UI
+            // 나머지 그룹 → 게시판 UI
             contentArea.innerHTML = `
                 <div style="margin-bottom:20px; border:1px solid #eee; padding:15px; border-radius:8px; background:#fff;">
                     <textarea id="groupInputPost" class="feed-input" placeholder="그룹에 글을 남겨보세요!"></textarea>
@@ -967,6 +923,227 @@
         dbData.groupPosts = dbData.groupPosts.filter(p => p.id !== id);
         renderGroupPosts();
         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteGroupPost', id: id, name: name }) });
+    }
+
+    // --- 오픽 스터디 스케줄 선택기 ---
+    function getScheduleWeekStart(date) {
+        const d = new Date(date);
+        const day = d.getDay(); // 0=일, 1=월, ...
+        const diff = day === 0 ? -6 : 1 - day; // 월요일로 이동
+        d.setDate(d.getDate() + diff);
+        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    }
+
+    function getScheduleWeekDates(weekStartKey) {
+        const start = parseDateKey(weekStartKey);
+        const dates = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(start);
+            d.setDate(d.getDate() + i);
+            dates.push(`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
+        }
+        return dates;
+    }
+
+    function changeScheduleWeek(offset) {
+        scheduleWeekDate.setDate(scheduleWeekDate.getDate() + offset * 7);
+        renderScheduleGrid();
+    }
+
+    function getScheduleDataForWeek(weekStartKey) {
+        // groupPosts에서 해당 주 스케줄 데이터 필터링
+        const posts = dbData.groupPosts ? dbData.groupPosts.filter(p => {
+            if (p.groupName !== '오픽 스터디') return false;
+            try {
+                const data = JSON.parse(p.content);
+                return data.type === 'schedule' && data.weekStart === weekStartKey;
+            } catch(e) { return false; }
+        }) : [];
+        return posts;
+    }
+
+    function renderScheduleGrid() {
+        const weekStartKey = getScheduleWeekStart(scheduleWeekDate);
+        const weekDates = getScheduleWeekDates(weekStartKey);
+        const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+        const myName = document.getElementById('userName').value.trim();
+        const todayKey = `${new Date().getFullYear()}-${new Date().getMonth()+1}-${new Date().getDate()}`;
+
+        // 주간 범위 표시
+        const startD = parseDateKey(weekDates[0]);
+        const endD = parseDateKey(weekDates[6]);
+        const rangeEl = document.getElementById('scheduleWeekRange');
+        if (rangeEl) rangeEl.innerText = `${startD.getFullYear()}.${startD.getMonth()+1}.${startD.getDate()} ~ ${endD.getMonth()+1}.${endD.getDate()}`;
+
+        // 스케줄 데이터 수집
+        const schedulePosts = getScheduleDataForWeek(weekStartKey);
+        // slotMap: { "dateKey|slot": [ { name, ... } ] }
+        const slotMap = {};
+        let mySlots = {}; // { "dateKey": ["09:00", ...] }
+        let myPostId = null;
+
+        schedulePosts.forEach(post => {
+            try {
+                const data = JSON.parse(post.content);
+                if (data.slots) {
+                    Object.entries(data.slots).forEach(([dateKey, slots]) => {
+                        slots.forEach(slot => {
+                            const key = `${dateKey}|${slot}`;
+                            if (!slotMap[key]) slotMap[key] = [];
+                            slotMap[key].push(post.name);
+                        });
+                    });
+                }
+                if (post.name === myName) {
+                    mySlots = data.slots || {};
+                    myPostId = post.id;
+                }
+            } catch(e) {}
+        });
+
+        // 시간 슬롯 (9:00~21:00)
+        const hours = [];
+        for (let h = 9; h <= 21; h++) {
+            hours.push(`${h < 10 ? '0' + h : h}:00`);
+        }
+
+        const table = document.getElementById('scheduleTable');
+        if (!table) return;
+
+        // 헤더
+        let headerHtml = '<thead><tr><th style="width:52px;">시간</th>';
+        weekDates.forEach((dk, i) => {
+            const d = parseDateKey(dk);
+            const isToday = dk === todayKey;
+            headerHtml += `<th class="${isToday ? 'today-col' : ''}">${dayNames[i]}<br>${d.getMonth()+1}/${d.getDate()}</th>`;
+        });
+        headerHtml += '</tr></thead>';
+
+        // 바디
+        let bodyHtml = '<tbody>';
+        hours.forEach(slot => {
+            bodyHtml += `<tr><td>${slot}</td>`;
+            weekDates.forEach(dk => {
+                const key = `${dk}|${slot}`;
+                const names = slotMap[key] || [];
+                const isMySelected = mySlots[dk] && mySlots[dk].includes(slot);
+                let cellClass = isMySelected ? 'my-selected' : '';
+                let cellContent = '';
+
+                names.forEach(name => {
+                    if (name === myName) {
+                        cellContent += `<span class="schedule-name-badge me">${name}</span>`;
+                    } else {
+                        cellContent += `<span class="schedule-name-badge other">${name}</span>`;
+                    }
+                });
+                if (names.length > 1) {
+                    cellContent += `<span class="schedule-count-badge">${names.length}명</span>`;
+                }
+
+                bodyHtml += `<td class="${cellClass}" onclick="toggleScheduleSlot('${dk}','${slot}')">${cellContent}</td>`;
+            });
+            bodyHtml += '</tr>';
+        });
+        bodyHtml += '</tbody>';
+
+        table.innerHTML = headerHtml + bodyHtml;
+
+        // 요약 렌더링
+        renderScheduleSummary(weekDates, slotMap);
+    }
+
+    function toggleScheduleSlot(dateKey, slot) {
+        const myName = document.getElementById('userName').value.trim();
+        if (!myName) { alert('이름을 먼저 입력하세요.'); return; }
+        const members = dbData.groupMembers ? dbData.groupMembers.filter(m => m.groupName === '오픽 스터디') : [];
+        if (!members.some(m => m.name === myName)) { alert('그룹에 참여해야 스케줄을 등록할 수 있습니다.'); return; }
+
+        const weekStartKey = getScheduleWeekStart(scheduleWeekDate);
+
+        // 기존 내 포스트 찾기
+        let myPost = null;
+        let myPostIdx = -1;
+        if (dbData.groupPosts) {
+            myPostIdx = dbData.groupPosts.findIndex(p => {
+                if (p.groupName !== '오픽 스터디' || p.name !== myName) return false;
+                try { const d = JSON.parse(p.content); return d.type === 'schedule' && d.weekStart === weekStartKey; } catch(e) { return false; }
+            });
+            if (myPostIdx >= 0) myPost = dbData.groupPosts[myPostIdx];
+        }
+
+        let mySlots = {};
+        let postId = null;
+        if (myPost) {
+            try { mySlots = JSON.parse(myPost.content).slots || {}; } catch(e) {}
+            postId = myPost.id;
+        }
+
+        // 토글
+        if (!mySlots[dateKey]) mySlots[dateKey] = [];
+        const idx = mySlots[dateKey].indexOf(slot);
+        if (idx >= 0) {
+            mySlots[dateKey].splice(idx, 1);
+            if (mySlots[dateKey].length === 0) delete mySlots[dateKey];
+        } else {
+            mySlots[dateKey].push(slot);
+        }
+
+        const contentObj = { type: 'schedule', weekStart: weekStartKey, slots: mySlots };
+        const contentStr = JSON.stringify(contentObj);
+
+        if (myPost) {
+            // 수정
+            myPost.content = contentStr;
+            renderScheduleGrid();
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'editGroupPost', id: postId, name: myName, groupName: '오픽 스터디', content: contentStr }) });
+        } else {
+            // 새로 생성
+            postId = 'gp_' + Date.now();
+            const newData = { action: 'saveGroupPost', id: postId, groupName: '오픽 스터디', name: myName, content: contentStr, timestamp: new Date().toISOString() };
+            if (!dbData.groupPosts) dbData.groupPosts = [];
+            dbData.groupPosts.push(newData);
+            renderScheduleGrid();
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) });
+        }
+    }
+
+    function renderScheduleSummary(weekDates, slotMap) {
+        const summaryEl = document.getElementById('scheduleSummary');
+        if (!summaryEl) return;
+
+        const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+        // 모든 슬롯을 인원수 기준 정렬
+        const allSlots = [];
+        Object.entries(slotMap).forEach(([key, names]) => {
+            if (names.length > 0) {
+                const [dk, slot] = key.split('|');
+                const d = parseDateKey(dk);
+                const dayIdx = weekDates.indexOf(dk);
+                const dayName = dayIdx >= 0 ? dayNames[dayIdx] : '';
+                allSlots.push({ dateKey: dk, slot, names, count: names.length, label: `${dayName} ${d.getMonth()+1}/${d.getDate()} ${slot}` });
+            }
+        });
+
+        allSlots.sort((a, b) => b.count - a.count);
+        const top5 = allSlots.slice(0, 5);
+
+        if (top5.length === 0) {
+            summaryEl.innerHTML = '<h4>📊 가장 많이 가능한 시간</h4><div style="text-align:center; color:#999; padding:10px;">아직 등록된 스케줄이 없습니다.</div>';
+            return;
+        }
+
+        let html = '<h4>📊 가장 많이 가능한 시간</h4>';
+        top5.forEach(s => {
+            html += `
+                <div class="schedule-best-slot">
+                    <span class="slot-time">${s.label}</span>
+                    <span class="slot-count">${s.count}명</span>
+                    <span class="slot-names">${s.names.join(', ')}</span>
+                </div>
+            `;
+        });
+        summaryEl.innerHTML = html;
     }
 
     // --- 다이어트 로그 ---
@@ -1097,7 +1274,6 @@
         if(e.target == document.getElementById('dayDetailModal')) closeDayDetail();
         if(e.target == document.getElementById('dietModal')) document.getElementById('dietModal').style.display='none';
         if(e.target == document.getElementById('weeklyCalendarModal')) closeWeeklyCalendarModal();
-        if(e.target == document.getElementById('createGroupModal')) closeCreateGroupModal();
     }
 </script>
 </body>
