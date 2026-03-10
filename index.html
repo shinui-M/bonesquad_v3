@@ -107,10 +107,9 @@
         .schedule-table td { padding: 0; text-align: center; border: 1px solid #eee; cursor: pointer; vertical-align: middle; height: 36px; transition: background 0.15s; font-size: 0.8em; position: relative; }
         .schedule-table td:first-child { cursor: default; background: #fafafa; font-weight: bold; font-size: 0.8em; color: #666; width: 52px; min-width: 52px; max-width: 52px; position: sticky; left: 0; z-index: 2; border-right: 2px solid #ccc; }
         .schedule-table td:hover:not(:first-child) { outline: 2px solid #e74c3c; outline-offset: -2px; z-index: 1; }
-        .schedule-table td.my-selected { background: #d5f5e3; }
+        .schedule-table td.my-selected { outline: 2px solid #e74c3c; outline-offset: -2px; z-index: 1; }
         .schedule-cell { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; min-height: 36px; }
-        .schedule-cell-count { font-weight: bold; font-size: 0.85em; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-        .schedule-cell-dot { width: 8px; height: 8px; border-radius: 50%; background: #e74c3c; }
+        .schedule-cell-count { font-weight: bold; font-size: 0.85em; }
         .schedule-cell-tooltip { display: none; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 0.75em; white-space: nowrap; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none; }
         .schedule-cell-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #2c3e50; }
         .schedule-table td:hover .schedule-cell-tooltip, .schedule-table td:active .schedule-cell-tooltip { display: block; }
@@ -807,7 +806,7 @@
                     <div class="schedule-legend-box schedule-heat-5"></div>
                     <span>많음</span>
                     &nbsp;
-                    <div class="schedule-legend-box" style="background:#d5f5e3;"></div>
+                    <div class="schedule-legend-box" style="background:#eee; outline:2px solid #e74c3c; outline-offset:-2px;"></div>
                     <span>내 선택</span>
                 </div>
                 <div class="schedule-table-wrap">
@@ -1044,16 +1043,15 @@
                     const level = Math.min(5, Math.ceil(count / Math.max(1, totalMembers) * 5) || 1);
                     heatClass = `schedule-heat-${level}`;
                 }
-                let cellClass = isMySelected ? 'my-selected' : heatClass;
+                let cellClass = [heatClass, isMySelected ? 'my-selected' : ''].filter(Boolean).join(' ');
 
-                // 셀 내용 — 간결하게 표시
+                // 셀 내용 — 투표 수 항상 표시
                 let cellContent = '<div class="schedule-cell">';
-                if (count === 0 && !isMySelected) {
-                    cellContent += '';
-                } else if (count === 1 && isMySelected && names.length === 1 && names[0] === myName) {
-                    cellContent += '<div class="schedule-cell-dot"></div>';
-                } else if (count > 0) {
-                    cellContent += `<span class="schedule-cell-count" style="color:${count >= 3 ? '#fff' : '#2c3e50'}; text-shadow:${count >= 3 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none'}">${count}</span>`;
+                if (count > 0) {
+                    const level = Math.min(5, Math.ceil(count / Math.max(1, totalMembers) * 5) || 1);
+                    const textColor = level >= 3 ? '#fff' : '#2c3e50';
+                    const shadow = level >= 3 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none';
+                    cellContent += `<span class="schedule-cell-count" style="color:${textColor}; text-shadow:${shadow}">${count}</span>`;
                 }
                 // 툴팁 (이름 목록)
                 if (count > 0) {
