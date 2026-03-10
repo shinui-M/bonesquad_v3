@@ -97,7 +97,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 오픽 스터디 스케줄 선택기
 - 주간 시간표 그리드 (월~일, 9:00~21:00, 1시간 단위)
-- 히트맵 방식 UI: 투표 수에 따라 셀 색상 강도 변화 (schedule-heat-1~5), hover/tap 시 투표자 이름 툴팁 표시
+- 히트맵 방식 UI: 투표 수에 따라 셀 색상 강도 변화 (`schedule-heat-1~5`), 셀에 투표 수 숫자 표시, hover/tap 시 투표자 이름 툴팁
+- 내 선택 표시: 빨간 테두리 outline (`my-selected` 클래스) — 히트맵 배경색과 동시 적용
 - 시간 컬럼은 `position: sticky`로 좌우 스크롤 시에도 고정
 - 기존 `groupPosts` 테이블에 JSON으로 저장: `{ type: "schedule", weekStart: "2026-3-2", slots: { "2026-3-2": ["09:00", "14:00"] } }`
 - 사용자당 주차당 1개 포스트 (새 포스트: `saveGroupPost`, 수정: `editGroupPost`)
@@ -109,13 +110,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `getFirstTaskDate(name)`: 멤버의 첫 성과 날짜 반환 (가입일 표시용)
 - `parseTaskContent(taskStr)`: 성과 JSON 문자열 → `{rating, items}` 파싱
 - `renderStars(rating)`: 별점 수치를 CSS 오버레이 방식으로 시각화
-- `getAllGroups()`: 기본 그룹 + 사용자 생성 그룹 합침
+- `getAllGroups()`: `DEFAULT_GROUPS` + `dbData.groups`(사용자 생성, 현재 미사용) 합침
+- `getScheduleWeekStart(date)`: Date → 해당 주 월요일 dateKey 반환
+- `getScheduleWeekDates(weekStartKey)`: weekStart → 7일치 dateKey 배열 반환
 
 ## Development & Deployment
 
 - **빌드 불필요**: 정적 HTML 파일, 빌드/번들 과정 없음
 - **배포**: `git push origin main` → GitHub Pages 자동 배포
 - **테스트**: 자동화 테스트 없음, 배포 후 브라우저에서 수동 확인
+- **PWA**: `manifest.json` + `icon.png` 포함. 모바일 홈 화면 추가 지원
 
 ## Conventions
 
