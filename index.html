@@ -135,12 +135,32 @@
         }
 
         /* 다이어트 로그 */
-        .diet-card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; overflow: hidden; background: #fff; }
-        .diet-header { background: #f1f1f1; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .diet-body { padding: 15px; }
-        .diet-row { display: flex; margin-bottom: 8px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
-        .diet-label { width: 50px; font-weight: bold; color: #e74c3c; flex-shrink: 0; }
-        .diet-content { flex-grow: 1; color: #555; white-space: pre-wrap; }
+        .diet-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+        .diet-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+        .diet-filter-btn { background: #f0f0f0; border: 1px solid #ddd; border-radius: 20px; padding: 4px 12px; font-size: 0.85em; cursor: pointer; color: #555; }
+        .diet-filter-btn.active { background: #27ae60; border-color: #27ae60; color: #fff; }
+        .diet-empty { text-align: center; padding: 40px 20px; color: #aaa; font-size: 0.95em; }
+        .diet-card { border: 1px solid #e8e8e8; border-radius: 12px; margin-bottom: 14px; overflow: hidden; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .diet-header { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 11px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; color: #fff; }
+        .diet-header-date { font-size: 0.95em; opacity: 0.9; }
+        .diet-header-name { font-size: 1em; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+        .diet-body { padding: 12px 16px; }
+        .diet-section { margin-bottom: 6px; }
+        .diet-section:last-child { margin-bottom: 0; }
+        .diet-row { display: flex; padding: 7px 0; border-bottom: 1px solid #f2f2f2; align-items: flex-start; gap: 10px; }
+        .diet-row:last-child { border-bottom: none; }
+        .diet-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9em; flex-shrink: 0; margin-top: 1px; }
+        .diet-icon.meal { background: #fff3e0; }
+        .diet-icon.exercise { background: #e8f5e9; }
+        .diet-label { width: 32px; font-weight: 600; color: #444; flex-shrink: 0; font-size: 0.85em; padding-top: 5px; }
+        .diet-content { flex-grow: 1; color: #333; white-space: pre-wrap; line-height: 1.5; font-size: 0.93em; padding-top: 4px; }
+        .diet-content.empty { color: #ccc; font-style: italic; }
+        .diet-exercise-row { background: #f0faf4; border-radius: 8px; padding: 8px 10px; margin-top: 8px; display: flex; gap: 10px; align-items: flex-start; }
+        .diet-modal-field { margin-bottom: 14px; }
+        .diet-modal-field label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: #444; margin-bottom: 5px; font-size: 0.92em; }
+        .diet-modal-field input, .diet-modal-field textarea { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.93em; box-sizing: border-box; background: #fafafa; transition: border-color 0.2s; }
+        .diet-modal-field input:focus, .diet-modal-field textarea:focus { outline: none; border-color: #27ae60; background: #fff; }
+        .diet-modal-field textarea { height: 70px; resize: vertical; }
 
         /* 수정/삭제 버튼 */
         .btn-edit { color: #3498db; border: 1px solid #ddd; background: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; cursor: pointer; margin-left: 5px;}
@@ -398,19 +418,35 @@
 <div id="dietModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <span>식단/운동 기록</span>
+            <span>🥗 식단/운동 기록</span>
             <span class="close-btn" onclick="document.getElementById('dietModal').style.display='none'">&times;</span>
         </div>
         <div class="modal-body">
-            <input type="date" id="inputDietDate" style="width:100%;" onchange="checkExistingDietLog()">
-            <div class="input-group">
-                <label>아침</label><input type="text" id="dietBreakfast" placeholder="아침 식단">
-                <label>점심</label><input type="text" id="dietLunch" placeholder="점심 식단">
-                <label>저녁</label><input type="text" id="dietDinner" placeholder="저녁 식단">
-                <label>간식</label><input type="text" id="dietSnack" placeholder="간식">
-                <label>운동</label><textarea id="dietExercise" placeholder="운동 내용" style="height:60px;"></textarea>
+            <div class="diet-modal-field">
+                <label>📅 날짜</label>
+                <input type="date" id="inputDietDate" onchange="checkExistingDietLog()">
             </div>
-            <button class="btn-submit" onclick="saveDietLog()">기록 저장 (수정)</button>
+            <div class="diet-modal-field">
+                <label>🌅 아침</label>
+                <input type="text" id="dietBreakfast" placeholder="아침 식단을 입력하세요">
+            </div>
+            <div class="diet-modal-field">
+                <label>☀️ 점심</label>
+                <input type="text" id="dietLunch" placeholder="점심 식단을 입력하세요">
+            </div>
+            <div class="diet-modal-field">
+                <label>🌙 저녁</label>
+                <input type="text" id="dietDinner" placeholder="저녁 식단을 입력하세요">
+            </div>
+            <div class="diet-modal-field">
+                <label>🍪 간식</label>
+                <input type="text" id="dietSnack" placeholder="간식을 입력하세요">
+            </div>
+            <div class="diet-modal-field">
+                <label>💪 운동</label>
+                <textarea id="dietExercise" placeholder="오늘의 운동을 입력하세요"></textarea>
+            </div>
+            <button class="btn-submit" onclick="saveDietLog()">기록 저장</button>
         </div>
     </div>
 </div>
@@ -782,8 +818,9 @@
         if (groupName === '뼈만 남는 다이어트') {
             // 다이어트 그룹은 기존 식단 로그 UI 유지
             contentArea.innerHTML = `
-                <div style="text-align:right; margin-bottom:10px;">
-                    <button class="btn-submit" style="width:auto; padding:8px 15px;" onclick="openDietModal()">+ 기록 작성</button>
+                <div class="diet-toolbar">
+                    <span style="font-size:0.9em; color:#888;">최신 기록 순으로 표시됩니다</span>
+                    <button class="btn-submit" style="width:auto; padding:8px 18px;" onclick="openDietModal()">+ 기록 작성</button>
                 </div>
                 <div id="dietLogList"></div>
             `;
@@ -1165,6 +1202,12 @@
     }
 
     // --- 다이어트 로그 ---
+    function formatDietDate(dateStr) {
+        const d = new Date(dateStr);
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        return `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+    }
+
     function renderDietLogs() {
         const listEl = document.getElementById('dietLogList');
         if(!listEl) return;
@@ -1172,19 +1215,49 @@
         const logs = dbData.dietLogs ? dbData.dietLogs.filter(l => l.groupName === currentGroup) : [];
         logs.sort((a,b) => new Date(b.date) - new Date(a.date));
 
+        if (logs.length === 0) {
+            listEl.innerHTML = '<div class="diet-empty">아직 기록된 식단이 없어요.<br>+ 기록 작성으로 첫 번째 식단을 남겨보세요 🥗</div>';
+            return;
+        }
+
+        const meals = [
+            { key: 'breakfast', icon: '🌅', label: '아침' },
+            { key: 'lunch',     icon: '☀️', label: '점심' },
+            { key: 'dinner',    icon: '🌙', label: '저녁' },
+            { key: 'snack',     icon: '🍪', label: '간식' },
+        ];
+
         logs.forEach(log => {
             let content = {};
             try { content = JSON.parse(log.content); } catch(e) {}
+
+            const mealRows = meals.map(m => {
+                const val = content[m.key];
+                const isEmpty = !val || !val.trim();
+                return `<div class="diet-row">
+                    <span class="diet-icon meal">${m.icon}</span>
+                    <div class="diet-label">${m.label}</div>
+                    <div class="diet-content${isEmpty ? ' empty' : ''}">${isEmpty ? '기록 없음' : val}</div>
+                </div>`;
+            }).join('');
+
+            const exercise = content.exercise && content.exercise.trim();
+            const exerciseRow = `<div class="diet-exercise-row">
+                <span class="diet-icon exercise">💪</span>
+                <div class="diet-label">운동</div>
+                <div class="diet-content${exercise ? '' : ' empty'}">${exercise || '기록 없음'}</div>
+            </div>`;
+
             const div = document.createElement('div');
             div.className = 'diet-card';
             div.innerHTML = `
-                <div class="diet-header"><span>${log.date}</span><span>${log.name}</span></div>
+                <div class="diet-header">
+                    <span class="diet-header-name">🥗 ${log.name}</span>
+                    <span class="diet-header-date">${formatDietDate(log.date)}</span>
+                </div>
                 <div class="diet-body">
-                    <div class="diet-row"><div class="diet-label">아침</div><div class="diet-content">${content.breakfast || '-'}</div></div>
-                    <div class="diet-row"><div class="diet-label">점심</div><div class="diet-content">${content.lunch || '-'}</div></div>
-                    <div class="diet-row"><div class="diet-label">저녁</div><div class="diet-content">${content.dinner || '-'}</div></div>
-                    <div class="diet-row"><div class="diet-label">간식</div><div class="diet-content">${content.snack || '-'}</div></div>
-                    <div class="diet-row" style="border:0;"><div class="diet-label">운동</div><div class="diet-content">${content.exercise || '-'}</div></div>
+                    ${mealRows}
+                    ${exerciseRow}
                 </div>
             `;
             listEl.appendChild(div);
