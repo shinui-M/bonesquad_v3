@@ -136,26 +136,32 @@
 
         /* 다이어트 로그 */
         .diet-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
-        .diet-filter { display: flex; gap: 6px; flex-wrap: wrap; }
-        .diet-filter-btn { background: #f0f0f0; border: 1px solid #ddd; border-radius: 20px; padding: 4px 12px; font-size: 0.85em; cursor: pointer; color: #555; }
-        .diet-filter-btn.active { background: #27ae60; border-color: #27ae60; color: #fff; }
         .diet-empty { text-align: center; padding: 40px 20px; color: #aaa; font-size: 0.95em; }
-        .diet-card { border: 1px solid #e8e8e8; border-radius: 12px; margin-bottom: 14px; overflow: hidden; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .diet-header { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 11px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; color: #fff; }
-        .diet-header-date { font-size: 0.95em; opacity: 0.9; }
-        .diet-header-name { font-size: 1em; font-weight: bold; display: flex; align-items: center; gap: 6px; }
-        .diet-body { padding: 12px 16px; }
-        .diet-section { margin-bottom: 6px; }
-        .diet-section:last-child { margin-bottom: 0; }
-        .diet-row { display: flex; padding: 7px 0; border-bottom: 1px solid #f2f2f2; align-items: flex-start; gap: 10px; }
-        .diet-row:last-child { border-bottom: none; }
-        .diet-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9em; flex-shrink: 0; margin-top: 1px; }
-        .diet-icon.meal { background: #fff3e0; }
-        .diet-icon.exercise { background: #e8f5e9; }
-        .diet-label { width: 32px; font-weight: 600; color: #444; flex-shrink: 0; font-size: 0.85em; padding-top: 5px; }
-        .diet-content { flex-grow: 1; color: #333; white-space: pre-wrap; line-height: 1.5; font-size: 0.93em; padding-top: 4px; }
-        .diet-content.empty { color: #ccc; font-style: italic; }
-        .diet-exercise-row { background: #f0faf4; border-radius: 8px; padding: 8px 10px; margin-top: 8px; display: flex; gap: 10px; align-items: flex-start; }
+        /* 날짜 그룹 아코디언 */
+        .diet-date-group { border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .diet-date-header { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+        .diet-date-header:hover { filter: brightness(1.05); }
+        .diet-date-title { font-weight: bold; color: #fff; font-size: 1em; display: flex; align-items: center; gap: 8px; }
+        .diet-date-meta { display: flex; align-items: center; gap: 8px; }
+        .diet-date-count { background: rgba(255,255,255,0.25); color: #fff; font-size: 0.8em; padding: 2px 9px; border-radius: 20px; font-weight: 600; }
+        .diet-date-chevron { color: rgba(255,255,255,0.85); font-size: 0.8em; transition: transform 0.2s; }
+        .diet-date-group.collapsed .diet-date-chevron { transform: rotate(-90deg); }
+        .diet-date-body { background: #fff; }
+        .diet-date-group.collapsed .diet-date-body { display: none; }
+        /* 멤버별 카드 */
+        .diet-person-card { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; }
+        .diet-person-card:last-child { border-bottom: none; }
+        .diet-person-name { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #333; margin-bottom: 9px; font-size: 0.92em; }
+        .diet-avatar { width: 26px; height: 26px; border-radius: 50%; background: #27ae60; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75em; font-weight: bold; flex-shrink: 0; }
+        .diet-meals { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
+        .diet-meal-item { display: flex; align-items: baseline; gap: 4px; background: #fafafa; border-radius: 7px; padding: 5px 8px; min-width: 0; }
+        .diet-meal-icon { font-size: 0.82em; flex-shrink: 0; }
+        .diet-meal-label { font-size: 0.73em; color: #999; font-weight: 600; flex-shrink: 0; }
+        .diet-meal-val { font-size: 0.83em; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .diet-meal-val.empty { color: #ccc; }
+        .diet-exercise-item { display: flex; align-items: baseline; gap: 5px; background: #f0faf4; border-radius: 7px; padding: 6px 9px; }
+        .diet-exercise-item .diet-meal-val { white-space: pre-wrap; overflow: visible; text-overflow: unset; }
+        /* 모달 */
         .diet-modal-field { margin-bottom: 14px; }
         .diet-modal-field label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: #444; margin-bottom: 5px; font-size: 0.92em; }
         .diet-modal-field input, .diet-modal-field textarea { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.93em; box-sizing: border-box; background: #fafafa; transition: border-color 0.2s; }
@@ -1213,13 +1219,21 @@
         if(!listEl) return;
         listEl.innerHTML = '';
         const logs = dbData.dietLogs ? dbData.dietLogs.filter(l => l.groupName === currentGroup) : [];
-        logs.sort((a,b) => new Date(b.date) - new Date(a.date));
 
         if (logs.length === 0) {
             listEl.innerHTML = '<div class="diet-empty">아직 기록된 식단이 없어요.<br>+ 기록 작성으로 첫 번째 식단을 남겨보세요 🥗</div>';
             return;
         }
 
+        // 날짜별 그룹핑 (최신 날짜 순)
+        const byDate = {};
+        logs.forEach(log => {
+            if (!byDate[log.date]) byDate[log.date] = [];
+            byDate[log.date].push(log);
+        });
+        const sortedDates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a));
+
+        const todayStr = new Date().toISOString().slice(0, 10);
         const meals = [
             { key: 'breakfast', icon: '🌅', label: '아침' },
             { key: 'lunch',     icon: '☀️', label: '점심' },
@@ -1227,40 +1241,52 @@
             { key: 'snack',     icon: '🍪', label: '간식' },
         ];
 
-        logs.forEach(log => {
-            let content = {};
-            try { content = JSON.parse(log.content); } catch(e) {}
+        sortedDates.forEach(date => {
+            const dateLogs = byDate[date];
+            const isToday = date === todayStr;
+            const collapsed = !isToday;
 
-            const mealRows = meals.map(m => {
-                const val = content[m.key];
-                const isEmpty = !val || !val.trim();
-                return `<div class="diet-row">
-                    <span class="diet-icon meal">${m.icon}</span>
-                    <div class="diet-label">${m.label}</div>
-                    <div class="diet-content${isEmpty ? ' empty' : ''}">${isEmpty ? '기록 없음' : val}</div>
+            const personCards = dateLogs.map(log => {
+                let c = {};
+                try { c = JSON.parse(log.content); } catch(e) {}
+                const initial = log.name.charAt(0);
+                const mealItems = meals.map(m => {
+                    const val = c[m.key] && c[m.key].trim();
+                    return `<div class="diet-meal-item">
+                        <span class="diet-meal-icon">${m.icon}</span>
+                        <span class="diet-meal-label">${m.label}</span>
+                        <span class="diet-meal-val${val ? '' : ' empty'}">${val || '-'}</span>
+                    </div>`;
+                }).join('');
+                const exercise = c.exercise && c.exercise.trim();
+                const exerciseItem = `<div class="diet-exercise-item">
+                    <span class="diet-meal-icon">💪</span>
+                    <span class="diet-meal-label">운동</span>
+                    <span class="diet-meal-val${exercise ? '' : ' empty'}">${exercise || '-'}</span>
+                </div>`;
+                return `<div class="diet-person-card">
+                    <div class="diet-person-name">
+                        <div class="diet-avatar">${initial}</div>
+                        ${log.name}
+                    </div>
+                    <div class="diet-meals">${mealItems}</div>
+                    ${exerciseItem}
                 </div>`;
             }).join('');
 
-            const exercise = content.exercise && content.exercise.trim();
-            const exerciseRow = `<div class="diet-exercise-row">
-                <span class="diet-icon exercise">💪</span>
-                <div class="diet-label">운동</div>
-                <div class="diet-content${exercise ? '' : ' empty'}">${exercise || '기록 없음'}</div>
-            </div>`;
-
-            const div = document.createElement('div');
-            div.className = 'diet-card';
-            div.innerHTML = `
-                <div class="diet-header">
-                    <span class="diet-header-name">🥗 ${log.name}</span>
-                    <span class="diet-header-date">${formatDietDate(log.date)}</span>
+            const group = document.createElement('div');
+            group.className = 'diet-date-group' + (collapsed ? ' collapsed' : '');
+            group.innerHTML = `
+                <div class="diet-date-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                    <span class="diet-date-title">🥗 ${formatDietDate(date)}${isToday ? ' <span style="font-size:0.75em;opacity:0.85;">오늘</span>' : ''}</span>
+                    <span class="diet-date-meta">
+                        <span class="diet-date-count">${dateLogs.length}명</span>
+                        <span class="diet-date-chevron">▼</span>
+                    </span>
                 </div>
-                <div class="diet-body">
-                    ${mealRows}
-                    ${exerciseRow}
-                </div>
+                <div class="diet-date-body">${personCards}</div>
             `;
-            listEl.appendChild(div);
+            listEl.appendChild(group);
         });
     }
 
