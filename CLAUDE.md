@@ -117,11 +117,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development & Deployment
 
 - **빌드 불필요**: 정적 HTML 파일, 빌드/번들 과정 없음
-- **배포**: `git push origin main` → GitHub Pages 자동 배포
-- **테스트**: 자동화 테스트 없음, 배포 후 브라우저에서 수동 확인
+- **로컬 테스트**: `python -m http.server 8080` → `http://localhost:8080` (또는 `serve.bat` 더블클릭)
+  - CORS 때문에 반드시 파일 직접 열기가 아닌 HTTP 서버로 실행해야 함
+- **배포**: `git push origin main` → GitHub Pages 자동 배포 (1~2분 소요)
+- **테스트**: 자동화 테스트 없음, 브라우저에서 수동 확인
 - **PWA**: `manifest.json` + `icon.png` 포함. 모바일 홈 화면 추가 지원
+- **test.html**: 실험적 변경 작업용 파일. 프로덕션에 적용 전 여기서 먼저 확인
 
 ## Conventions
 
 - 커밋 메시지는 한국어로 작성
 - 수정 완료 후 자동으로 git commit & push 수행 (사용자에게 확인 불필요)
+- 변경 전 `test.html`에서 먼저 테스트하고, 확인 후 `index.html`에 반영
