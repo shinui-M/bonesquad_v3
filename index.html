@@ -47,16 +47,17 @@
         .btn-move { background: none; border: none; color: #e74c3c; font-size: 1.3em; cursor: pointer; padding: 0 8px; }
 
         /* 멤버 프로필 카드 그리드 */
-        .weekly-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; width: 100%; box-sizing: border-box; }
+        .weekly-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; box-sizing: border-box; }
 
-        .submitter-card { background: #fff; border: 2px solid #eee; padding: 15px 10px; border-radius: 12px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; text-align: center; position: relative; }
+        .submitter-card { background: #fff; border: 2px solid #eee; padding: 12px; border-radius: 12px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: row; align-items: center; gap: 10px; transition: 0.2s; cursor: pointer; text-align: left; position: relative; }
         .submitter-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .submitter-card.me { border-color: #e74c3c; background: #fff0f0; }
         .submitter-card.submitted { border-color: #2ecc71; }
         .submitter-card.faint { opacity: 0.6; filter: grayscale(50%); background: #f8f8f8; border: 2px dashed #ccc; box-shadow: none; }
-        .submitter-card .card-avatar { width: 50px; height: 50px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid #f0f0f0; }
-        .submitter-card .card-name { font-weight: bold; font-size: 0.95em; color: #333; }
-        .submitter-card .card-badge { position: absolute; top: 6px; right: 6px; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
+        .submitter-card .card-avatar { width: 44px; height: 44px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid #f0f0f0; flex-shrink: 0; }
+        .submitter-card .card-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+        .submitter-card .card-name { font-weight: bold; font-size: 0.95em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .submitter-card .card-badge { position: absolute; top: 6px; right: 6px; font-size: 0.65em; padding: 2px 5px; border-radius: 10px; font-weight: bold; }
         .submitter-card .badge-done { background: #2ecc71; color: #fff; }
         .submitter-card .badge-none { background: #bdc3c7; color: #fff; }
         .rating-badge { font-weight: bold; font-size: 0.9em; }
@@ -586,10 +587,12 @@
             const memberInfo = dbData.members ? dbData.members.find(m => m.name === item.name) : null;
             const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`;
             card.innerHTML = `
-                <span class="card-badge badge-done">작성완료</span>
+                <span class="card-badge badge-done">완료</span>
                 <img src="${avatarUrl}" class="card-avatar">
-                <span class="card-name">${item.name}</span>
-                <span class="rating-badge">${renderStars(parsed.rating)}</span>
+                <div class="card-info">
+                    <span class="card-name">${item.name}</span>
+                    <span class="rating-badge">${renderStars(parsed.rating)}</span>
+                </div>
             `;
             grid.appendChild(card);
         });
@@ -605,7 +608,9 @@
                     card.innerHTML = `
                         <span class="card-badge badge-none">미작성</span>
                         <img src="${avatarUrl}" class="card-avatar">
-                        <span class="card-name">${member.name}</span>
+                        <div class="card-info">
+                            <span class="card-name">${member.name}</span>
+                        </div>
                     `;
                     grid.appendChild(card);
                 }
