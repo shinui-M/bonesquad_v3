@@ -49,17 +49,19 @@
         /* 멤버 프로필 카드 그리드 */
         .weekly-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; box-sizing: border-box; }
 
-        .submitter-card { background: #fff; border: 2px solid #eee; padding: 12px; border-radius: 12px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: row; align-items: center; gap: 10px; transition: 0.2s; cursor: pointer; text-align: left; position: relative; }
-        .submitter-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .submitter-card { background: #fff; border: 2px solid #eee; padding: 10px; border-radius: 12px; font-size: 0.9em; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: row; align-items: center; gap: 9px; transition: 0.2s; cursor: pointer; text-align: left; overflow: hidden; }
+        .submitter-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .submitter-card.me { border-color: #e74c3c; background: #fff0f0; }
         .submitter-card.submitted { border-color: #2ecc71; }
         .submitter-card.faint { opacity: 0.6; filter: grayscale(50%); background: #f8f8f8; border: 2px dashed #ccc; box-shadow: none; }
-        .submitter-card .card-avatar { width: 44px; height: 44px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid #f0f0f0; flex-shrink: 0; }
-        .submitter-card .card-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
-        .submitter-card .card-name { font-weight: bold; font-size: 0.95em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .submitter-card .card-badge { position: absolute; top: 6px; right: 6px; font-size: 0.65em; padding: 2px 5px; border-radius: 10px; font-weight: bold; }
+        .submitter-card .card-avatar { width: 40px; height: 40px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid #f0f0f0; flex-shrink: 0; }
+        .submitter-card .card-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; overflow: hidden; }
+        .submitter-card .card-top-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+        .submitter-card .card-name { font-weight: bold; font-size: 0.88em; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+        .submitter-card .card-badge { font-size: 0.6em; padding: 2px 5px; border-radius: 8px; font-weight: bold; flex-shrink: 0; white-space: nowrap; }
         .submitter-card .badge-done { background: #2ecc71; color: #fff; }
         .submitter-card .badge-none { background: #bdc3c7; color: #fff; }
+        .submitter-card .rating-badge { font-size: 0.75em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rating-badge { font-weight: bold; font-size: 0.9em; }
         .star-rating { position: relative; display: inline-block; color: #ddd; white-space: nowrap; }
         .star-rating .star-fill { position: absolute; left: 0; top: 0; overflow: hidden; color: #f1c40f; white-space: nowrap; }
@@ -218,19 +220,23 @@
         .close-btn { cursor: pointer; font-size: 2em; line-height: 0.5; color: #999; }
 
         /* 모두의 성과 모달 */
-        .day-detail-date { text-align: center; font-size: 1.1em; color: #666; margin-bottom: 18px; }
-        .day-detail-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); transition: 0.2s; }
-        .day-detail-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-        .day-detail-card.faint { opacity: 0.5; background: #fafafa; border: 1px dashed #ddd; box-shadow: none; }
-        .day-detail-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .day-detail-profile img { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #f0f0f0; object-fit: cover; background: #eee; }
-        .day-detail-profile .profile-info { flex: 1; }
-        .day-detail-profile .profile-name { font-weight: bold; font-size: 1.05em; color: #2c3e50; }
-        .day-detail-profile .profile-rating { color: #f1c40f; font-size: 0.95em; margin-top: 2px; }
-        .day-detail-items { display: flex; flex-direction: column; gap: 6px; }
-        .day-detail-item { display: flex; align-items: center; gap: 10px; font-size: 0.93em; }
-        .day-detail-tag { font-weight: bold; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; min-width: 44px; text-align: center; }
-        .day-detail-content { color: #444; line-height: 1.4; }
+        .detail-section-title { font-size: 0.82em; font-weight: bold; color: #999; padding: 10px 0 6px; border-bottom: 1px solid #eee; margin-bottom: 10px; letter-spacing: 0.03em; }
+        .detail-submitted-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+        .detail-unsub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .day-detail-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
+        .day-detail-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+        .day-detail-profile { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+        .day-detail-profile img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #f0f0f0; object-fit: cover; background: #eee; flex-shrink: 0; }
+        .day-detail-profile .profile-info { flex: 1; min-width: 0; }
+        .day-detail-profile .profile-name { font-weight: bold; font-size: 0.92em; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .day-detail-profile .profile-rating { font-size: 0.8em; margin-top: 2px; }
+        .day-detail-items { display: flex; flex-direction: column; gap: 5px; }
+        .day-detail-item { display: flex; align-items: flex-start; gap: 7px; font-size: 0.83em; }
+        .day-detail-tag { font-weight: bold; color: #fff; padding: 2px 7px; border-radius: 10px; font-size: 0.78em; min-width: 36px; text-align: center; flex-shrink: 0; }
+        .day-detail-content { color: #444; line-height: 1.4; word-break: break-all; }
+        .detail-mini-card { background: #f8f8f8; border: 1px dashed #ddd; border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; opacity: 0.6; }
+        .detail-mini-card img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; filter: grayscale(40%); }
+        .detail-mini-name { font-size: 0.82em; color: #888; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
         .btn-write-from-detail { display: block; width: 100%; padding: 13px; background: #e74c3c; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1em; margin-top: 18px; transition: 0.2s; }
         .btn-write-from-detail:hover { background: #c0392b; }
 
@@ -242,7 +248,7 @@
             .calendar-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
             .calendar-toolbar-left, .calendar-toolbar-center, .calendar-toolbar-right { justify-content: center; }
             .btn-move { font-size: 1.2em; padding: 0 10px; }
-            .weekly-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+            .weekly-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
             .member-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .week-grid-modal { gap: 2px; }
             .week-day-col { padding: 4px 2px; min-height: 70px; }
@@ -587,10 +593,12 @@
             const memberInfo = dbData.members ? dbData.members.find(m => m.name === item.name) : null;
             const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`;
             card.innerHTML = `
-                <span class="card-badge badge-done">완료</span>
                 <img src="${avatarUrl}" class="card-avatar">
                 <div class="card-info">
-                    <span class="card-name">${item.name}</span>
+                    <div class="card-top-row">
+                        <span class="card-name">${item.name}</span>
+                        <span class="card-badge badge-done">완료</span>
+                    </div>
                     <span class="rating-badge">${renderStars(parsed.rating)}</span>
                 </div>
             `;
@@ -606,10 +614,12 @@
                     card.onclick = () => openDayDetail(dateKey);
                     const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
                     card.innerHTML = `
-                        <span class="card-badge badge-none">미작성</span>
                         <img src="${avatarUrl}" class="card-avatar">
                         <div class="card-info">
-                            <span class="card-name">${member.name}</span>
+                            <div class="card-top-row">
+                                <span class="card-name">${member.name}</span>
+                                <span class="card-badge badge-none">미작성</span>
+                            </div>
                         </div>
                     `;
                     grid.appendChild(card);
@@ -628,69 +638,81 @@
         container.innerHTML = '';
         document.getElementById('dayDetailTitle').innerText = `${date} 모두의 성과`;
 
-        // "내 성과 작성하기" 버튼의 날짜를 동적으로 설정
         const writeBtn = document.querySelector('#dayDetailModal .btn-write-from-detail');
         writeBtn.onclick = () => { closeDayDetail(); openModal(date); };
 
         const todaysTasks = dbData.tasks ? dbData.tasks.filter(t => t.date === date) : [];
         const submittedNames = new Set(todaysTasks.map(t => t.name));
 
-        // 작성한 멤버 카드
-        todaysTasks.forEach(t => {
-            const parsed = parseTaskContent(t.task);
-            const memberInfo = dbData.members ? dbData.members.find(m => m.name === t.name) : null;
-            const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${t.name}`;
-            let itemsHtml = '';
-            if (parsed.items) {
-                parsed.items.forEach(item => {
-                    let tagColor = '#95a5a6';
-                    if (item.category === '몰입') tagColor = '#e74c3c';
-                    if (item.category === '성장') tagColor = '#2ecc71';
-                    if (item.category === '일정') tagColor = '#3498db';
-                    if (item.category === '충전') tagColor = '#f1c40f';
-                    const textColor = item.category === '충전' ? 'color:#333;' : '';
-                    itemsHtml += `<div class="day-detail-item"><span class="day-detail-tag" style="background:${tagColor};${textColor}">${item.category}</span><span class="day-detail-content">${item.content}</span></div>`;
-                });
-            }
+        // 미작성 멤버 목록
+        const unsubmitted = dbData.members ? dbData.members.filter(m => !submittedNames.has(m.name) && !isBeforeFirstTask(m.name, date)) : [];
 
-            const card = document.createElement('div');
-            card.className = 'day-detail-card';
-            card.innerHTML = `
-                <div class="day-detail-profile">
-                    <img src="${avatarUrl}">
-                    <div class="profile-info">
-                        <div class="profile-name">${t.name}</div>
-                        <div class="profile-rating">${renderStars(parsed.rating)}</div>
-                    </div>
-                </div>
-                <div class="day-detail-items">${itemsHtml}</div>
-            `;
-            container.appendChild(card);
-        });
-
-        // 미작성 멤버 카드 (첫 성과 이전 날짜면 숨김)
-        if (dbData.members) {
-            dbData.members.forEach(member => {
-                if (!submittedNames.has(member.name) && !isBeforeFirstTask(member.name, date)) {
-                    const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
-                    const card = document.createElement('div');
-                    card.className = 'day-detail-card faint';
-                    card.innerHTML = `
-                        <div class="day-detail-profile">
-                            <img src="${avatarUrl}">
-                            <div class="profile-info">
-                                <div class="profile-name">${member.name}</div>
-                                <div class="profile-rating" style="color:#bdc3c7;">미작성</div>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                }
-            });
+        if (todaysTasks.length === 0 && unsubmitted.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#999; padding:30px;">기록이 없습니다.</div>';
+            document.getElementById('dayDetailModal').style.display = 'flex';
+            return;
         }
 
-        if (todaysTasks.length === 0 && (!dbData.members || dbData.members.length === 0)) {
-            container.innerHTML = '<div style="text-align:center; color:#999; padding:30px;">기록이 없습니다.</div>';
+        // 작성 완료 섹션
+        if (todaysTasks.length > 0) {
+            const secTitle = document.createElement('div');
+            secTitle.className = 'detail-section-title';
+            secTitle.textContent = `✅ 작성 완료 ${todaysTasks.length}명`;
+            container.appendChild(secTitle);
+
+            const grid = document.createElement('div');
+            grid.className = 'detail-submitted-grid';
+
+            todaysTasks.forEach(t => {
+                const parsed = parseTaskContent(t.task);
+                const memberInfo = dbData.members ? dbData.members.find(m => m.name === t.name) : null;
+                const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${t.name}`;
+                let itemsHtml = '';
+                if (parsed.items) {
+                    parsed.items.forEach(item => {
+                        let tagColor = '#95a5a6';
+                        if (item.category === '몰입') tagColor = '#e74c3c';
+                        if (item.category === '성장') tagColor = '#2ecc71';
+                        if (item.category === '일정') tagColor = '#3498db';
+                        if (item.category === '충전') tagColor = '#f1c40f';
+                        const textColor = item.category === '충전' ? 'color:#333;' : '';
+                        itemsHtml += `<div class="day-detail-item"><span class="day-detail-tag" style="background:${tagColor};${textColor}">${item.category}</span><span class="day-detail-content">${item.content}</span></div>`;
+                    });
+                }
+                const card = document.createElement('div');
+                card.className = 'day-detail-card';
+                card.innerHTML = `
+                    <div class="day-detail-profile">
+                        <img src="${avatarUrl}">
+                        <div class="profile-info">
+                            <div class="profile-name">${t.name}</div>
+                            <div class="profile-rating">${renderStars(parsed.rating)}</div>
+                        </div>
+                    </div>
+                    <div class="day-detail-items">${itemsHtml}</div>
+                `;
+                grid.appendChild(card);
+            });
+            container.appendChild(grid);
+        }
+
+        // 미작성 섹션
+        if (unsubmitted.length > 0) {
+            const secTitle2 = document.createElement('div');
+            secTitle2.className = 'detail-section-title';
+            secTitle2.textContent = `⏳ 미작성 ${unsubmitted.length}명`;
+            container.appendChild(secTitle2);
+
+            const miniGrid = document.createElement('div');
+            miniGrid.className = 'detail-unsub-grid';
+            unsubmitted.forEach(member => {
+                const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
+                const card = document.createElement('div');
+                card.className = 'detail-mini-card';
+                card.innerHTML = `<img src="${avatarUrl}"><span class="detail-mini-name">${member.name}</span>`;
+                miniGrid.appendChild(card);
+            });
+            container.appendChild(miniGrid);
         }
 
         document.getElementById('dayDetailModal').style.display = 'flex';
