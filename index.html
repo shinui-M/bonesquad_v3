@@ -540,8 +540,9 @@
                         if (idx >= 0) {
                             if (lp.bio) dbData.members[idx].bio = lp.bio;
                             if (lp.avatar) dbData.members[idx].avatar = lp.avatar;
+                            if (lp.bannerColor) dbData.members[idx].bannerColor = lp.bannerColor;
                         } else {
-                            dbData.members.push({ name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt });
+                            dbData.members.push({ name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt, bannerColor: lp.bannerColor });
                         }
                     }
                 }
