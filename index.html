@@ -176,9 +176,12 @@
         .btn-delete { color: #e74c3c; border: 1px solid #ddd; background: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; cursor: pointer; margin-left: 5px;}
 
         .input-group { margin-bottom: 15px; border: 1px solid #eee; padding: 15px; border-radius: 8px; background: #fafafa; }
-        .input-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .type-select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 80px; }
-        .content-input { flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+        .type-select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 80px; flex-shrink: 0; margin-top: 2px; }
+        .content-input { flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: none; overflow: hidden; min-height: 36px; line-height: 1.5; font-family: inherit; font-size: 1em; box-sizing: border-box; }
+        .star-slider-wrap { display: flex; flex-direction: column; gap: 8px; }
+        .star-slider-wrap input[type="range"] { width: 100%; accent-color: #f1c40f; height: 6px; cursor: pointer; }
+        .rating-display { text-align: center; font-size: 1.15em; padding: 4px 0; }
         .btn-add { background: #34495e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
         .btn-remove { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 
@@ -382,8 +385,11 @@
         </div>
         <div class="modal-body">
             <div class="input-group">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">평점 (0.0~5.0)</label>
-                <input type="number" id="inputRating" step="0.1" min="0" max="5" value="0.0" style="width:100px;">
+                <label style="font-weight:bold; display:block; margin-bottom:10px;">평점</label>
+                <div class="star-slider-wrap">
+                    <input type="range" id="inputRating" min="0" max="5" step="0.5" value="0" oninput="updateRatingDisplay(this.value)">
+                    <div id="ratingDisplay" class="rating-display"></div>
+                </div>
             </div>
             <div class="input-group">
                 <label style="font-weight:bold; display:block; margin-bottom:10px;">상세 항목</label>
@@ -1383,9 +1389,42 @@
     }
 
     // --- 기존 공통 함수들 ---
-    function addTaskItem(initialData = null) { const container = document.getElementById('taskItemsContainer'); const div = document.createElement('div'); div.className = 'input-row'; div.innerHTML = `<select class="type-select"><option value="몰입">몰입</option><option value="성장">성장</option><option value="일정">일정</option><option value="충전">충전</option><option value="기타">기타</option></select><input type="text" class="content-input" placeholder="내용을 입력하세요"><button class="btn-remove" onclick="this.parentElement.remove()">X</button>`; container.appendChild(div); if(initialData) { div.querySelector('.type-select').value = initialData.category; div.querySelector('.content-input').value = initialData.content; } }
+    function addTaskItem(initialData = null) {
+        const container = document.getElementById('taskItemsContainer');
+        const div = document.createElement('div');
+        div.className = 'input-row';
+        div.innerHTML = `<select class="type-select"><option value="몰입">몰입</option><option value="성장">성장</option><option value="일정">일정</option><option value="충전">충전</option><option value="기타">기타</option></select><textarea class="content-input" placeholder="내용을 입력하세요" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea><button class="btn-remove" onclick="this.parentElement.remove()">X</button>`;
+        container.appendChild(div);
+        if (initialData) {
+            div.querySelector('.type-select').value = initialData.category;
+            const ta = div.querySelector('.content-input');
+            ta.value = initialData.content;
+            setTimeout(() => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }, 0);
+        }
+    }
 
-    function openModal(date) { selectedDateKey = date; const myName = document.getElementById('userName').value.trim(); document.getElementById('modalDateTitle').innerText = `${date} 성과 작성`; const myTask = dbData.tasks ? dbData.tasks.find(t => t.date === date && t.name === myName) : null; const container = document.getElementById('taskItemsContainer'); container.innerHTML = ''; if (myTask) { const parsed = parseTaskContent(myTask.task); document.getElementById('inputRating').value = parsed.rating || "0.0"; if (parsed.items && parsed.items.length > 0) { parsed.items.forEach(item => addTaskItem(item)); } else { addTaskItem(); } } else { document.getElementById('inputRating').value = "0.0"; addTaskItem(); } document.getElementById('taskModal').style.display = 'flex'; }
+    function updateRatingDisplay(val) {
+        document.getElementById('ratingDisplay').innerHTML = renderStars(parseFloat(val));
+    }
+
+    function openModal(date) {
+        selectedDateKey = date;
+        const myName = document.getElementById('userName').value.trim();
+        document.getElementById('modalDateTitle').innerText = `${date} 성과 작성`;
+        const myTask = dbData.tasks ? dbData.tasks.find(t => t.date === date && t.name === myName) : null;
+        const container = document.getElementById('taskItemsContainer');
+        container.innerHTML = '';
+        const rating = myTask ? (parseTaskContent(myTask.task).rating || "0") : "0";
+        document.getElementById('inputRating').value = rating;
+        updateRatingDisplay(rating);
+        if (myTask) {
+            const parsed = parseTaskContent(myTask.task);
+            if (parsed.items && parsed.items.length > 0) { parsed.items.forEach(item => addTaskItem(item)); } else { addTaskItem(); }
+        } else {
+            addTaskItem();
+        }
+        document.getElementById('taskModal').style.display = 'flex';
+    }
 
     function renderFeed() { const listEl = document.getElementById('feedList'); listEl.innerHTML = ''; if (!dbData.feeds || dbData.feeds.length === 0) { listEl.innerHTML = '<li style="text-align:center; padding:20px; color:#999;">첫 글을 남겨보세요!</li>'; return; } const myName = document.getElementById('userName').value.trim(); [...dbData.feeds].reverse().forEach(feed => { const li = document.createElement('li'); li.className = 'feed-item'; let content = feed.content; let imgHtml = ""; try { if(content.startsWith("{")) { const parsed = JSON.parse(content); content = parsed.text; if(parsed.img) imgHtml = `<img src="${parsed.img}" class="feed-img">`; } } catch(e) {} const myComments = dbData.comments ? dbData.comments.filter(c => c.feedId === feed.id) : []; let commentHtml = ''; myComments.forEach(c => { commentHtml += `<li class="comment-item"><span class="comment-author">${c.name}</span><span class="comment-content">${c.content}</span></li>`; }); const dateStr = new Date(feed.timestamp).toLocaleString();
     let actionBtns = "";
