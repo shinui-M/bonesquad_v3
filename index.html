@@ -538,9 +538,15 @@
                         const lp = JSON.parse(localProfile);
                         const idx = dbData.members.findIndex(m => m.name === savedName);
                         if (idx >= 0) {
-                            if (lp.bio) dbData.members[idx].bio = lp.bio;
-                            if (lp.avatar) dbData.members[idx].avatar = lp.avatar;
-                            if (lp.bannerColor) dbData.members[idx].bannerColor = lp.bannerColor;
+                            const serverMember = dbData.members[idx];
+                            const hadNoServerColor = !serverMember.bannerColor;
+                            if (lp.bio) serverMember.bio = lp.bio;
+                            if (lp.avatar) serverMember.avatar = lp.avatar;
+                            if (lp.bannerColor) serverMember.bannerColor = lp.bannerColor;
+                            // 서버에 bannerColor가 없으면 자동 동기화 (다른 사람도 볼 수 있도록)
+                            if (lp.bannerColor && hadNoServerColor) {
+                                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveMember', name: serverMember.name, bio: serverMember.bio, avatar: serverMember.avatar, createdAt: serverMember.createdAt || lp.createdAt || '', bannerColor: lp.bannerColor }) });
+                            }
                         } else {
                             dbData.members.push({ name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt, bannerColor: lp.bannerColor });
                         }
