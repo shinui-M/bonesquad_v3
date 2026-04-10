@@ -391,11 +391,8 @@
         </div>
         <div class="modal-body">
             <div class="input-group">
-                <label style="font-weight:bold; display:block; margin-bottom:10px;">평점</label>
-                <div class="star-slider-wrap">
-                    <input type="range" id="inputRating" min="0" max="5" step="0.5" value="0" oninput="updateRatingDisplay(this.value)">
-                    <div id="ratingDisplay" class="rating-display"></div>
-                </div>
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">평점 (0.0~5.0)</label>
+                <input type="number" id="inputRating" step="0.1" min="0" max="5" value="0.0" style="width:100px;">
             </div>
             <div class="input-group">
                 <label style="font-weight:bold; display:block; margin-bottom:10px;">상세 항목</label>
@@ -1409,9 +1406,6 @@
         }
     }
 
-    function updateRatingDisplay(val) {
-        document.getElementById('ratingDisplay').innerHTML = renderStars(parseFloat(val));
-    }
 
     function openModal(date) {
         selectedDateKey = date;
@@ -1420,9 +1414,8 @@
         const myTask = dbData.tasks ? dbData.tasks.find(t => t.date === date && t.name === myName) : null;
         const container = document.getElementById('taskItemsContainer');
         container.innerHTML = '';
-        const rating = myTask ? (parseTaskContent(myTask.task).rating || "0") : "0";
+        const rating = myTask ? (parseTaskContent(myTask.task).rating || "0.0") : "0.0";
         document.getElementById('inputRating').value = rating;
-        updateRatingDisplay(rating);
         if (myTask) {
             const parsed = parseTaskContent(myTask.task);
             if (parsed.items && parsed.items.length > 0) { parsed.items.forEach(item => addTaskItem(item)); } else { addTaskItem(); }
