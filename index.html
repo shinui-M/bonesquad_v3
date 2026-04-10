@@ -377,6 +377,11 @@
                 </div>
             </div>
             <textarea id="inputBio" placeholder="자기소개..."></textarea>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; width:100%;">
+                <label for="inputBannerColor" style="font-weight:bold; font-size:0.92em; white-space:nowrap;">카드 색상</label>
+                <input type="color" id="inputBannerColor" value="#e74c3c" style="width:48px; height:36px; border:1px solid #ddd; border-radius:6px; cursor:pointer; padding:2px;">
+                <span style="font-size:0.8em; color:#999;">배너 그라디언트 기준 색상</span>
+            </div>
             <button class="btn-submit" onclick="saveMember()">프로필 저장하기</button>
         </div>
     </div>
@@ -563,6 +568,7 @@
                         }
                     }
                     if (me && me.bio) document.getElementById('inputBio').value = me.bio;
+                    if (me && me.bannerColor) document.getElementById('inputBannerColor').value = me.bannerColor;
                 }
                 loadingEl.style.display = 'none';
             })
@@ -1436,7 +1442,19 @@
     li.innerHTML = `<div class="feed-header"><div><span style="font-weight:bold;">${feed.name}</span><span style="font-size:0.8em; color:#999; margin-left:8px;">${dateStr}</span></div><div>${actionBtns}</div></div>${imgHtml}<div style="white-space:pre-wrap;">${content}</div><div class="comment-section"><ul class="comment-list">${commentHtml}</ul><div style="display:flex; gap:5px;"><input type="text" id="commentInput-${feed.id}" placeholder="댓글 달기..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;"><button class="btn-submit" style="width:60px; padding:0; margin-top:0;" onclick="saveComment('${feed.id}')">등록</button></div></div>`; listEl.appendChild(li); }); }
 
     function getFirstTaskDate(name) { const tasks = dbData.tasks ? dbData.tasks.filter(t => t.name === name) : []; if (tasks.length === 0) return null; return tasks.map(t => parseDateKey(t.date)).sort((a,b) => a-b)[0]; }
-    function getMemberColor(name) {
+    function getMemberColor(member) {
+        if (member && member.bannerColor) {
+            // hex → hsl 변환 후 그라디언트 2색 생성
+            const hex = member.bannerColor.replace('#', '');
+            const r = parseInt(hex.substring(0,2),16)/255, g = parseInt(hex.substring(2,4),16)/255, b = parseInt(hex.substring(4,6),16)/255;
+            const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+            let h = 0;
+            if (d !== 0) { if (max === r) h = ((g-b)/d + 6) % 6; else if (max === g) h = (b-r)/d + 2; else h = (r-g)/d + 4; h = Math.round(h * 60); }
+            const l = (max + min) / 2, s = d === 0 ? 0 : d / (1 - Math.abs(2*l - 1));
+            const h2 = (h + 40) % 360;
+            return [`hsl(${h},${Math.round(s*100)}%,${Math.round(l*100)}%)`, `hsl(${h2},${Math.round(s*100)}%,${Math.round(Math.max(l*100-8,20))}%)`];
+        }
+        const name = typeof member === 'string' ? member : (member && member.name ? member.name : '');
         let hash = 0;
         for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
         const h1 = Math.abs(hash) % 360;
@@ -1458,7 +1476,7 @@
             const firstDate = getFirstTaskDate(member.name);
             const joinStr = firstDate ? `${firstDate.getFullYear()}.${firstDate.getMonth()+1}.${firstDate.getDate()}` : '-';
             const totalTasks = dbData.tasks ? dbData.tasks.filter(t => t.name === member.name).length : 0;
-            const [c1, c2] = getMemberColor(member.name);
+            const [c1, c2] = getMemberColor(member);
             div.innerHTML = `
                 <div class="member-card-banner" style="background:linear-gradient(135deg,${c1},${c2});"></div>
                 <div class="member-card-body">
@@ -1484,7 +1502,7 @@
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
-    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); localStorage.setItem('study_profile_' + name, JSON.stringify({ bio: bio, avatar: avatarUrl, createdAt: createdAt })); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
+    function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const bannerColor = document.getElementById('inputBannerColor').value; const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt, bannerColor: bannerColor }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); localStorage.setItem('study_profile_' + name, JSON.stringify({ bio: bio, avatar: avatarUrl, createdAt: createdAt, bannerColor: bannerColor })); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
     function renderStars(rating) { const r = parseFloat(rating) || 0; const pct = Math.min(r / 5 * 100, 100); return `<span class="star-rating"><span>★★★★★</span><span class="star-fill" style="width:${pct}%">★★★★★</span></span> ${rating || '0'}`; }
     function parseTaskContent(taskStr) { try { if (taskStr.trim().startsWith("{")) return JSON.parse(taskStr); } catch (e) {} return { rating: null, items: [{ category: '기존', content: taskStr }] }; }
     function updateAvatarPreview() { const style = document.getElementById('avatarStyle').value; const seed = currentAvatarSeed || "default"; document.getElementById('avatarPreview').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`; }
