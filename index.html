@@ -232,10 +232,22 @@
         .detail-section-title { font-size: 0.82em; font-weight: bold; color: #999; padding: 10px 0 6px; border-bottom: 1px solid #eee; margin-bottom: 10px; letter-spacing: 0.03em; }
         .detail-submitted-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
         .detail-unsub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .day-detail-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
+        .day-detail-card { background: #fff; border: 2px solid #eee; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
         .day-detail-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+        .day-detail-card.rank-gold   { border-color: #FFD700; background: #fffdf0; }
+        .day-detail-card.rank-silver { border-color: #C0C0C0; background: #fafafa; }
+        .day-detail-card.rank-bronze { border-color: #CD7F32; background: #fdf8f3; }
+        .day-detail-card.rank-last   { border-color: #ddd; border-style: dashed; }
         .day-detail-profile { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
-        .day-detail-profile img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #f0f0f0; object-fit: cover; background: #eee; flex-shrink: 0; }
+        .day-detail-profile img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #f0f0f0; object-fit: cover; background: #eee; }
+        /* 뼈갈지수 순위 아바타 뱃지 */
+        .avatar-rank-wrap { position: relative; flex-shrink: 0; }
+        .avatar-rank-wrap img { display: block; }
+        .avatar-rank-wrap.rank-gold   img { border-color: #FFD700; border-width: 3px; }
+        .avatar-rank-wrap.rank-silver img { border-color: #C0C0C0; border-width: 3px; }
+        .avatar-rank-wrap.rank-bronze img { border-color: #CD7F32; border-width: 3px; }
+        .avatar-rank-wrap.rank-last   img { border-color: #bbb; border-style: dashed; }
+        .rank-medal { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); font-size: 0.82em; line-height: 1; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15)); }
         .day-detail-profile .profile-info { flex: 1; min-width: 0; }
         .day-detail-profile .profile-name { font-weight: bold; font-size: 0.92em; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .day-detail-profile .profile-rating { font-size: 0.8em; margin-top: 2px; }
@@ -752,6 +764,17 @@
             return;
         }
 
+        // 뼈갈지수 순위 계산
+        const boneRanked = todaysTasks
+            .map(t => ({ name: t.name, avg: getAvgBoneScore(`${date}_${t.name}`) }))
+            .filter(x => x.avg !== null)
+            .sort((a, b) => parseFloat(b.avg) - parseFloat(a.avg));
+        const rankMap = {};
+        const medals = ['gold', 'silver', 'bronze'];
+        boneRanked.forEach((x, i) => { if (i < 3) rankMap[x.name] = medals[i]; });
+        if (boneRanked.length >= 4) rankMap[boneRanked[boneRanked.length - 1].name] = 'last';
+        const medalEmoji = { gold: '🥇', silver: '🥈', bronze: '🥉', last: '💀' };
+
         // 작성 완료 섹션
         if (todaysTasks.length > 0) {
             const secTitle = document.createElement('div');
@@ -789,11 +812,17 @@
                 const raterCnt = (dbData.taskReactions || []).filter(r => r.taskId === taskId && r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined).length;
                 const commentCount = (dbData.taskComments || []).filter(c => c.taskId === taskId).length;
 
+                const rank = rankMap[t.name] || '';
+                const medal = rank ? medalEmoji[rank] : '';
+
                 const card = document.createElement('div');
-                card.className = 'day-detail-card';
+                card.className = 'day-detail-card' + (rank ? ` rank-${rank}` : '');
                 card.innerHTML = `
                     <div class="day-detail-profile">
-                        <img src="${avatarUrl}">
+                        <div class="avatar-rank-wrap${rank ? ` rank-${rank}` : ''}">
+                            <img src="${avatarUrl}">
+                            ${medal ? `<span class="rank-medal">${medal}</span>` : ''}
+                        </div>
                         <div class="profile-info">
                             <div class="profile-name">${t.name}</div>
                             <div class="profile-rating">${renderStars(parsed.rating)}</div>
