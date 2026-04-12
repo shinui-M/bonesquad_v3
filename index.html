@@ -605,6 +605,13 @@
                     dbData.members.forEach(m => { if (m.name) memberMap[m.name.trim()] = { ...m, name: m.name.trim() }; });
                     dbData.members = Object.values(memberMap);
                 }
+                // tasks 이름 공백 정규화 + 중복 제거 (같은 날짜+이름이면 마지막 항목 유지)
+                if (dbData.tasks && dbData.tasks.length > 0) {
+                    dbData.tasks = dbData.tasks.map(t => ({ ...t, name: t.name ? t.name.trim() : t.name, date: t.date ? t.date.trim() : t.date }));
+                    const taskMap = {};
+                    dbData.tasks.forEach(t => { if (t.date && t.name) taskMap[`${t.date}_${t.name}`] = t; });
+                    dbData.tasks = Object.values(taskMap);
+                }
                 // 내 프로필: localStorage 데이터로 덮어쓰기 (렌더링 전에 반영)
                 const savedName = document.getElementById('userName').value.trim();
                 if (savedName) {
