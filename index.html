@@ -599,10 +599,10 @@
                 if(!dbData.members) dbData.members = [];
                 if(!dbData.taskReactions) dbData.taskReactions = [];
                 if(!dbData.taskComments) dbData.taskComments = [];
-                // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지)
+                // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지, trim으로 공백 차이 무시)
                 if (dbData.members.length > 0) {
                     const memberMap = {};
-                    dbData.members.forEach(m => { memberMap[m.name] = m; });
+                    dbData.members.forEach(m => { if (m.name) memberMap[m.name.trim()] = { ...m, name: m.name.trim() }; });
                     dbData.members = Object.values(memberMap);
                 }
                 // 내 프로필: localStorage 데이터로 덮어쓰기 (렌더링 전에 반영)
@@ -1683,18 +1683,30 @@
     }
 
     function getAvgBoneScore(taskId) {
-        const rxns = getTaskReactionsFor(taskId).filter(r => r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined);
+        // raterName 기준 중복 제거 (마지막 값 우선) 후 평균 계산
+        const rxnMap = {};
+        (dbData.taskReactions || []).forEach(r => {
+            if (r.taskId === taskId && r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined) {
+                rxnMap[r.raterName] = r;
+            }
+        });
+        const rxns = Object.values(rxnMap);
         if (!rxns.length) return null;
         return (rxns.reduce((s, r) => s + parseFloat(r.boneScore), 0) / rxns.length).toFixed(1);
     }
 
     function getFireCount(taskId) {
-        return getTaskReactionsFor(taskId).filter(r => String(r.fire) === '1').length;
+        // raterName 기준 중복 제거 후 카운트
+        const rxnMap = {};
+        (dbData.taskReactions || []).forEach(r => { if (r.taskId === taskId) rxnMap[r.raterName] = r; });
+        return Object.values(rxnMap).filter(r => String(r.fire) === '1').length;
     }
 
     function getMyReactionFor(taskId) {
         const me = document.getElementById('userName').value.trim();
-        return (dbData.taskReactions || []).find(r => r.taskId === taskId && r.raterName === me) || null;
+        // 중복 시 마지막(최신) 값 반환
+        const rxns = (dbData.taskReactions || []).filter(r => r.taskId === taskId && r.raterName === me);
+        return rxns.length ? rxns[rxns.length - 1] : null;
     }
 
     function persistReaction(taskId, boneScore, fire) {
