@@ -4,7 +4,7 @@
     <script>
         // =====================================================================
         // ▼▼▼ [필수] 구글 앱스 스크립트 배포 주소를 따옴표 안에 넣으세요 ▼▼▼
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0DHeEpEl6_TT-zJR_9kWYzu9mR3ry4wyVWkSrYJLN1yCpDMn9Obbsi3QoKnqXo76dSA/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-fIfxfxjkiw8adkfN8iea6j_O6Hda5BJkOtn1AOF6TTvSa7gSrL5tnqXggt1l9ZcRFg/exec";
         // =====================================================================
     </script>
     <meta charset="UTF-8">
@@ -512,6 +512,7 @@
     let currentAvatarSeed = "";
     let currentGroup = null;
     let scheduleWeekDate = new Date();
+    let currentDetailDate = null; // 현재 열린 성과 모달의 날짜 (재렌더 동기화용)
 
     // 기본 그룹 (삭제 불가)
     const DEFAULT_GROUPS = [
@@ -586,6 +587,10 @@
                 renderMembers();
                 renderGroupList();
                 if(currentGroup) enterGroup(currentGroup);
+                // 성과 모달이 열려 있으면 서버 최신 데이터로 재렌더 (동기화)
+                if (currentDetailDate && document.getElementById('dayDetailModal').style.display === 'flex') {
+                    openDayDetail(currentDetailDate);
+                }
                 // 폼 필드 복원
                 if (savedName) {
                     const me = dbData.members.find(m => m.name === savedName);
@@ -693,6 +698,7 @@
 
     function openDayDetail(date) {
         window._dcTaskIds = [];
+        currentDetailDate = date;
         const container = document.getElementById('dayDetailContent');
         container.innerHTML = '';
         document.getElementById('dayDetailTitle').innerText = `${date} 모두의 성과`;
@@ -815,6 +821,7 @@
 
     function closeDayDetail() {
         document.getElementById('dayDetailModal').style.display = 'none';
+        currentDetailDate = null;
     }
 
     function changeDay(offset) { currentDate.setDate(currentDate.getDate() + offset); renderWeeklyCalendar(); }
@@ -1639,6 +1646,7 @@
         const cntEl = document.getElementById('fire-cnt-' + sid);
         if (btn) { if (!curFire) btn.classList.add('fired'); else btn.classList.remove('fired'); }
         if (cntEl) cntEl.textContent = getFireCount(taskId);
+        renderWeeklyCalendar(); // 메인 그리드 즉시 동기화
     }
 
     function saveBoneScore(taskId, score) {
@@ -1654,6 +1662,7 @@
             const cnt = getTaskReactionsFor(taskId).filter(r => r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined).length;
             raterEl.textContent = '(' + cnt + '명 평가)';
         }
+        renderWeeklyCalendar(); // 메인 그리드 즉시 동기화
     }
 
     function renderTaskCommentList(taskId) {
