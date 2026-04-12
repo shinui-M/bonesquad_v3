@@ -1704,6 +1704,7 @@
     function renderCommentModalList() {
         const listEl = document.getElementById('commentModalList');
         if (!listEl) return;
+        const me = document.getElementById('userName').value.trim();
         const comments = (dbData.taskComments || []).filter(c => c.taskId === currentCommentTaskId);
         if (comments.length === 0) {
             listEl.innerHTML = '<li class="comment-modal-empty">아직 댓글이 없어요. 첫 댓글을 남겨보세요!</li>';
@@ -1711,9 +1712,35 @@
         }
         listEl.innerHTML = comments.map(c => {
             const ts = new Date(c.timestamp).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
-            return `<li class="task-comment-item"><span class="task-comment-author">${c.name}</span><span class="task-comment-content">${c.content}</span><span class="task-comment-time">${ts}</span></li>`;
+            const myBtns = (me && c.name === me)
+                ? `<button class="btn-edit" onclick="editTaskComment('${c.id}')">수정</button><button class="btn-delete" onclick="deleteTaskComment('${c.id}')">삭제</button>`
+                : '';
+            return `<li class="task-comment-item"><span class="task-comment-author">${c.name}</span><span class="task-comment-content">${c.content}</span><span class="task-comment-time">${ts}</span>${myBtns}</li>`;
         }).join('');
         listEl.scrollTop = listEl.scrollHeight;
+    }
+
+    function editTaskComment(id) {
+        const comment = (dbData.taskComments || []).find(c => c.id === id);
+        if (!comment) return;
+        const newContent = prompt('댓글 수정:', comment.content);
+        if (newContent === null || newContent.trim() === '') return;
+        comment.content = newContent.trim();
+        renderCommentModalList();
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'editTaskComment', id, content: newContent.trim() }) });
+    }
+
+    function deleteTaskComment(id) {
+        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+        dbData.taskComments = (dbData.taskComments || []).filter(c => c.id !== id);
+        renderCommentModalList();
+        const sid = taskSafeId(currentCommentTaskId);
+        const cnt = document.getElementById('comment-cnt-' + sid);
+        const btn = document.getElementById('comment-btn-' + sid);
+        const newCount = (dbData.taskComments || []).filter(c => c.taskId === currentCommentTaskId).length;
+        if (cnt) cnt.textContent = newCount;
+        if (btn && newCount === 0) btn.classList.remove('has-comments');
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteTaskComment', id }) });
     }
 
     function submitCommentModal() {
