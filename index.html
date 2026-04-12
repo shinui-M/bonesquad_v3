@@ -249,6 +249,32 @@
         .btn-write-from-detail { display: block; width: 100%; padding: 13px; background: #e74c3c; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1em; margin-top: 18px; transition: 0.2s; }
         .btn-write-from-detail:hover { background: #c0392b; }
 
+        /* 뼈갈지수 & 성과 반응 */
+        .task-reaction-bar { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; flex-wrap: wrap; }
+        .bone-score-disp { display: flex; align-items: center; gap: 4px; font-size: 0.88em; font-weight: bold; color: #e74c3c; }
+        .bone-rater-count { font-size: 0.75em; color: #aaa; font-weight: normal; margin-left: 2px; }
+        .fire-btn { background: none; border: 1px solid #eee; border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 0.9em; transition: 0.2s; display: flex; align-items: center; gap: 4px; }
+        .fire-btn:hover { background: #fff9f0; border-color: #f39c12; }
+        .fire-btn.fired { background: #fff0e0; border-color: #f39c12; font-weight: bold; }
+        .bone-rate-wrap { margin-top: 8px; background: #fff8f8; border-radius: 8px; padding: 8px 10px; border: 1px solid #fce; }
+        .bone-rate-label { font-size: 0.8em; color: #666; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+        .bone-rate-label strong { color: #e74c3c; font-size: 1.2em; min-width: 20px; text-align: right; }
+        .bone-slider { width: 100%; accent-color: #e74c3c; cursor: pointer; height: 6px; display: block; }
+        .bone-slider-ticks { display: flex; justify-content: space-between; font-size: 0.65em; color: #bbb; padding: 0 2px; margin-top: 2px; }
+        .task-comment-section { margin-top: 10px; background: #f8f9fa; border-radius: 8px; padding: 10px; }
+        .task-comment-section-title { font-size: 0.78em; color: #999; font-weight: bold; margin-bottom: 8px; letter-spacing: 0.03em; }
+        .task-comment-list { list-style: none; padding: 0; margin: 0 0 8px; max-height: 140px; overflow-y: auto; }
+        .task-comment-item { background: #fff; padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; font-size: 0.82em; border: 1px solid #eee; display: flex; gap: 6px; align-items: baseline; }
+        .task-comment-author { color: #e74c3c; font-weight: bold; white-space: nowrap; }
+        .task-comment-content { color: #555; word-break: break-all; flex: 1; }
+        .task-comment-time { color: #ccc; font-size: 0.78em; white-space: nowrap; }
+        .task-comment-input-row { display: flex; gap: 5px; }
+        .task-comment-input-row input { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85em; background: #fff; }
+        .task-comment-input-row button { padding: 6px 12px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.82em; font-weight: bold; white-space: nowrap; }
+        .bone-card-stats { display: flex; align-items: center; gap: 6px; font-size: 0.72em; margin-top: 3px; }
+        .bone-card-bone { color: #e74c3c; font-weight: bold; }
+        .bone-card-fire { color: #f39c12; }
+
         /* 모바일 최적화 */
         @media (max-width: 768px) {
             .container { padding: 15px; margin: 10px; }
@@ -481,7 +507,7 @@
 <script>
     let currentDate = new Date();
     let weekModalDate = new Date();
-    let dbData = { tasks: [], feeds: [], comments: [], members: [], groupMembers: [], groupPosts: [], dietLogs: [], groups: [] };
+    let dbData = { tasks: [], feeds: [], comments: [], members: [], groupMembers: [], groupPosts: [], dietLogs: [], groups: [], taskReactions: [], taskComments: [] };
     let selectedDateKey = null;
     let currentAvatarSeed = "";
     let currentGroup = null;
@@ -524,6 +550,8 @@
                 if(!dbData.groups) dbData.groups = [];
                 if(!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
                 if(!dbData.members) dbData.members = [];
+                if(!dbData.taskReactions) dbData.taskReactions = [];
+                if(!dbData.taskComments) dbData.taskComments = [];
                 // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지)
                 if (dbData.members.length > 0) {
                     const memberMap = {};
@@ -614,6 +642,11 @@
             card.onclick = () => openDayDetail(dateKey);
             const memberInfo = dbData.members ? dbData.members.find(m => m.name === item.name) : null;
             const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`;
+            const taskId = `${dateKey}_${item.name}`;
+            const avgBone = getAvgBoneScore(taskId);
+            const fireCount = getFireCount(taskId);
+            const boneHtml = avgBone !== null ? `<span class="bone-card-bone">🦴 ${avgBone}</span>` : '';
+            const fireHtml = fireCount > 0 ? `<span class="bone-card-fire">🔥 ${fireCount}</span>` : '';
             card.innerHTML = `
                 <img src="${avatarUrl}" class="card-avatar">
                 <div class="card-info">
@@ -622,6 +655,7 @@
                         <span class="card-badge badge-done">완료</span>
                     </div>
                     <span class="rating-badge">${renderStars(parsed.rating)}</span>
+                    ${(boneHtml || fireHtml) ? `<div class="bone-card-stats">${boneHtml}${fireHtml}</div>` : ''}
                 </div>
             `;
             grid.appendChild(card);
@@ -655,7 +689,10 @@
         openModal(dateKey);
     }
 
+    window._dcTaskIds = []; // taskId 레지스트리 (onclick 핸들러용)
+
     function openDayDetail(date) {
+        window._dcTaskIds = [];
         const container = document.getElementById('dayDetailContent');
         container.innerHTML = '';
         document.getElementById('dayDetailTitle').innerText = `${date} 모두의 성과`;
@@ -701,6 +738,23 @@
                         itemsHtml += `<div class="day-detail-item"><span class="day-detail-tag" style="background:${tagColor};${textColor}">${item.category}</span><span class="day-detail-content">${item.content}</span></div>`;
                     });
                 }
+                const taskId = `${date}_${t.name}`;
+                const tidx = window._dcTaskIds.push(taskId) - 1;
+                const sid = taskSafeId(taskId);
+                const avgBone = getAvgBoneScore(taskId);
+                const fireCount = getFireCount(taskId);
+                const myR = getMyReactionFor(taskId);
+                const myBone = myR && myR.boneScore !== '' && myR.boneScore !== null && myR.boneScore !== undefined ? parseInt(myR.boneScore) : 5;
+                const myFired = myR && String(myR.fire) === '1';
+                const raterCnt = (dbData.taskReactions || []).filter(r => r.taskId === taskId && r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined).length;
+                const taskComments = (dbData.taskComments || []).filter(c => c.taskId === taskId);
+                let commentsHtml = taskComments.length === 0
+                    ? '<li style="text-align:center;color:#bbb;font-size:0.8em;padding:6px;">첫 댓글을 남겨보세요!</li>'
+                    : taskComments.map(c => {
+                        const ts = new Date(c.timestamp).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+                        return `<li class="task-comment-item"><span class="task-comment-author">${c.name}</span><span class="task-comment-content">${c.content}</span><span class="task-comment-time">${ts}</span></li>`;
+                    }).join('');
+
                 const card = document.createElement('div');
                 card.className = 'day-detail-card';
                 card.innerHTML = `
@@ -712,6 +766,25 @@
                         </div>
                     </div>
                     <div class="day-detail-items">${itemsHtml}</div>
+                    <div class="task-reaction-bar">
+                        <span class="bone-score-disp">🦴 <span id="bone-avg-${sid}">${avgBone !== null ? avgBone : '-'}</span>/10 <span id="bone-rater-${sid}" class="bone-rater-count">(${raterCnt}명 평가)</span></span>
+                        <button id="fire-btn-${sid}" class="fire-btn${myFired ? ' fired' : ''}" onclick="toggleFire(window._dcTaskIds[${tidx}])">🔥 <span id="fire-cnt-${sid}">${fireCount}</span></button>
+                    </div>
+                    <div class="bone-rate-wrap">
+                        <div class="bone-rate-label">내 뼈갈지수: <strong id="bone-val-${sid}">${myBone}</strong> / 10</div>
+                        <input type="range" class="bone-slider" min="0" max="10" step="1" value="${myBone}"
+                            oninput="document.getElementById('bone-val-${sid}').textContent=this.value"
+                            onchange="saveBoneScore(window._dcTaskIds[${tidx}], this.value)">
+                        <div class="bone-slider-ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div>
+                    </div>
+                    <div class="task-comment-section">
+                        <div class="task-comment-section-title">💬 댓글</div>
+                        <ul class="task-comment-list" id="tc-list-${sid}">${commentsHtml}</ul>
+                        <div class="task-comment-input-row">
+                            <input type="text" id="tc-input-${sid}" placeholder="댓글 달기...">
+                            <button onclick="saveTaskComment(window._dcTaskIds[${tidx}])">등록</button>
+                        </div>
+                    </div>
                 `;
                 grid.appendChild(card);
             });
@@ -1519,6 +1592,101 @@
     function previewCustomAvatar() { const url = document.getElementById('customAvatarUrl').value.trim(); if (url) { document.getElementById('avatarPreview').src = url; } }
     function closeModal() { document.getElementById('taskModal').style.display = 'none'; }
     function openTab(name, e) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active')); document.getElementById(name).classList.add('active'); e.currentTarget.classList.add('active'); if(name==='calendarTab') renderWeeklyCalendar(); if(name==='groupTab') renderGroupList(); }
+    // ==================== 뼈갈지수 & 성과 반응 ====================
+    function taskSafeId(taskId) {
+        let h = 0;
+        for (let i = 0; i < taskId.length; i++) { h = ((h << 5) - h) + taskId.charCodeAt(i); h |= 0; }
+        return 'tsk' + Math.abs(h);
+    }
+
+    function getTaskReactionsFor(taskId) {
+        return (dbData.taskReactions || []).filter(r => r.taskId === taskId);
+    }
+
+    function getAvgBoneScore(taskId) {
+        const rxns = getTaskReactionsFor(taskId).filter(r => r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined);
+        if (!rxns.length) return null;
+        return (rxns.reduce((s, r) => s + parseFloat(r.boneScore), 0) / rxns.length).toFixed(1);
+    }
+
+    function getFireCount(taskId) {
+        return getTaskReactionsFor(taskId).filter(r => String(r.fire) === '1').length;
+    }
+
+    function getMyReactionFor(taskId) {
+        const me = document.getElementById('userName').value.trim();
+        return (dbData.taskReactions || []).find(r => r.taskId === taskId && r.raterName === me) || null;
+    }
+
+    function persistReaction(taskId, boneScore, fire) {
+        const me = document.getElementById('userName').value.trim();
+        if (!me) return;
+        if (!dbData.taskReactions) dbData.taskReactions = [];
+        const idx = dbData.taskReactions.findIndex(r => r.taskId === taskId && r.raterName === me);
+        const obj = { taskId, raterName: me, boneScore, fire: fire ? '1' : '0', timestamp: new Date().toISOString() };
+        if (idx >= 0) dbData.taskReactions[idx] = obj; else dbData.taskReactions.push(obj);
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTaskReaction', ...obj }) });
+    }
+
+    function toggleFire(taskId) {
+        const me = document.getElementById('userName').value.trim();
+        if (!me) { alert('이름을 먼저 입력하세요.'); return; }
+        const myR = getMyReactionFor(taskId);
+        const curFire = myR && String(myR.fire) === '1';
+        persistReaction(taskId, myR ? myR.boneScore : '', !curFire);
+        const sid = taskSafeId(taskId);
+        const btn = document.getElementById('fire-btn-' + sid);
+        const cntEl = document.getElementById('fire-cnt-' + sid);
+        if (btn) { if (!curFire) btn.classList.add('fired'); else btn.classList.remove('fired'); }
+        if (cntEl) cntEl.textContent = getFireCount(taskId);
+    }
+
+    function saveBoneScore(taskId, score) {
+        const me = document.getElementById('userName').value.trim();
+        if (!me) { alert('이름을 먼저 입력하세요.'); return; }
+        const myR = getMyReactionFor(taskId);
+        persistReaction(taskId, score, myR && String(myR.fire) === '1');
+        const sid = taskSafeId(taskId);
+        const avgEl = document.getElementById('bone-avg-' + sid);
+        const raterEl = document.getElementById('bone-rater-' + sid);
+        if (avgEl) { const avg = getAvgBoneScore(taskId); avgEl.textContent = avg !== null ? avg : '-'; }
+        if (raterEl) {
+            const cnt = getTaskReactionsFor(taskId).filter(r => r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined).length;
+            raterEl.textContent = '(' + cnt + '명 평가)';
+        }
+    }
+
+    function renderTaskCommentList(taskId) {
+        const sid = taskSafeId(taskId);
+        const listEl = document.getElementById('tc-list-' + sid);
+        if (!listEl) return;
+        const comments = (dbData.taskComments || []).filter(c => c.taskId === taskId);
+        if (comments.length === 0) {
+            listEl.innerHTML = '<li style="text-align:center;color:#bbb;font-size:0.8em;padding:6px;">첫 댓글을 남겨보세요!</li>';
+            return;
+        }
+        listEl.innerHTML = comments.map(c => {
+            const ts = new Date(c.timestamp).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+            return `<li class="task-comment-item"><span class="task-comment-author">${c.name}</span><span class="task-comment-content">${c.content}</span><span class="task-comment-time">${ts}</span></li>`;
+        }).join('');
+    }
+
+    function saveTaskComment(taskId) {
+        const me = document.getElementById('userName').value.trim();
+        if (!me) { alert('이름을 먼저 입력하세요.'); return; }
+        const sid = taskSafeId(taskId);
+        const input = document.getElementById('tc-input-' + sid);
+        if (!input) return;
+        const content = input.value.trim();
+        if (!content) { alert('댓글 내용을 입력하세요.'); return; }
+        const obj = { id: 'tc_' + Date.now(), taskId, name: me, content, timestamp: new Date().toISOString() };
+        if (!dbData.taskComments) dbData.taskComments = [];
+        dbData.taskComments.push(obj);
+        input.value = '';
+        renderTaskCommentList(taskId);
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTaskComment', ...obj }) });
+    }
+
     window.onclick = function(e) {
         if(e.target == document.getElementById('taskModal')) closeModal();
         if(e.target == document.getElementById('dayDetailModal')) closeDayDetail();
