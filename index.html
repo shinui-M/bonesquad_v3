@@ -545,8 +545,14 @@
         if(typeof SCRIPT_URL === 'undefined' || SCRIPT_URL.includes("여기에")) { loadingEl.style.display='none'; alert("스크립트 주소를 넣어주세요!"); return; }
         loadingEl.style.display = 'flex';
         fetch(SCRIPT_URL + "?action=getAllData")
-            .then(response => response.json())
+            .then(response => response.text())
+            .then(text => {
+                let data;
+                try { data = JSON.parse(text); } catch(e) { console.error('서버 응답 파싱 실패:', text.slice(0, 200)); throw new Error('JSON parse error'); }
+                return data;
+            })
             .then(data => {
+                if (!data || typeof data !== 'object') throw new Error('서버 응답 형식 오류');
                 dbData = data;
                 if(!dbData.groups) dbData.groups = [];
                 if(!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
@@ -612,7 +618,15 @@
                 }
                 loadingEl.style.display = 'none';
             })
-            .catch(e => { console.error(e); loadingEl.style.display='none'; });
+            .catch(e => {
+                console.error('loadData 실패:', e);
+                loadingEl.style.display = 'none';
+                // 서버 실패해도 기존 dbData로 렌더링 (화면 빈 상태 방지)
+                renderWeeklyCalendar();
+                renderFeed();
+                renderMembers();
+                renderGroupList();
+            });
     }
 
     // dateKey("2025-2-15") → Date 객체로 변환
