@@ -261,16 +261,19 @@
         .bone-rate-label strong { color: #e74c3c; font-size: 1.2em; min-width: 20px; text-align: right; }
         .bone-slider { width: 100%; accent-color: #e74c3c; cursor: pointer; height: 6px; display: block; }
         .bone-slider-ticks { display: flex; justify-content: space-between; font-size: 0.65em; color: #bbb; padding: 0 2px; margin-top: 2px; }
-        .task-comment-section { margin-top: 10px; background: #f8f9fa; border-radius: 8px; padding: 10px; }
-        .task-comment-section-title { font-size: 0.78em; color: #999; font-weight: bold; margin-bottom: 8px; letter-spacing: 0.03em; }
-        .task-comment-list { list-style: none; padding: 0; margin: 0 0 8px; max-height: 140px; overflow-y: auto; }
-        .task-comment-item { background: #fff; padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; font-size: 0.82em; border: 1px solid #eee; display: flex; gap: 6px; align-items: baseline; }
+        .comment-btn { background: none; border: 1px solid #eee; border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 0.9em; transition: 0.2s; }
+        .comment-btn:hover { background: #f0f8ff; border-color: #3498db; }
+        .comment-btn.has-comments { border-color: #3498db; color: #3498db; font-weight: bold; }
+        /* 댓글 모달 */
+        .comment-modal-list { list-style: none; padding: 0; margin: 0 0 12px; max-height: 260px; overflow-y: auto; }
+        .task-comment-item { background: #f8f9fa; padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; font-size: 0.87em; border: 1px solid #eee; display: flex; gap: 8px; align-items: baseline; }
         .task-comment-author { color: #e74c3c; font-weight: bold; white-space: nowrap; }
-        .task-comment-content { color: #555; word-break: break-all; flex: 1; }
+        .task-comment-content { color: #444; word-break: break-all; flex: 1; }
         .task-comment-time { color: #ccc; font-size: 0.78em; white-space: nowrap; }
-        .task-comment-input-row { display: flex; gap: 5px; }
-        .task-comment-input-row input { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85em; background: #fff; }
-        .task-comment-input-row button { padding: 6px 12px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.82em; font-weight: bold; white-space: nowrap; }
+        .comment-modal-input-row { display: flex; gap: 6px; }
+        .comment-modal-input-row input { flex: 1; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.93em; background: #fff; }
+        .comment-modal-input-row button { padding: 9px 16px; background: #e74c3c; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: bold; white-space: nowrap; }
+        .comment-modal-empty { text-align: center; color: #bbb; font-size: 0.88em; padding: 20px 0; }
         .bone-card-stats { display: flex; align-items: center; gap: 6px; font-size: 0.72em; margin-top: 3px; }
         .bone-card-bone { color: #e74c3c; font-weight: bold; }
         .bone-card-fire { color: #f39c12; }
@@ -463,6 +466,23 @@
                 <button class="btn-move" onclick="changeWeekInModal(7)">&rsaquo;</button>
             </div>
             <div class="week-grid-modal" id="weekGridModal"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 댓글 모달 -->
+<div id="commentModal" class="modal">
+    <div class="modal-content" style="width:420px;">
+        <div class="modal-header">
+            <span id="commentModalTitle">💬 댓글</span>
+            <span class="close-btn" onclick="closeCommentModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <ul class="comment-modal-list" id="commentModalList"></ul>
+            <div class="comment-modal-input-row">
+                <input type="text" id="commentModalInput" placeholder="댓글을 입력하세요..." onkeydown="if(event.key==='Enter') submitCommentModal()">
+                <button onclick="submitCommentModal()">등록</button>
+            </div>
         </div>
     </div>
 </div>
@@ -767,13 +787,7 @@
                 const myBone = myR && myR.boneScore !== '' && myR.boneScore !== null && myR.boneScore !== undefined ? parseInt(myR.boneScore) : 5;
                 const myFired = myR && String(myR.fire) === '1';
                 const raterCnt = (dbData.taskReactions || []).filter(r => r.taskId === taskId && r.boneScore !== '' && r.boneScore !== null && r.boneScore !== undefined).length;
-                const taskComments = (dbData.taskComments || []).filter(c => c.taskId === taskId);
-                let commentsHtml = taskComments.length === 0
-                    ? '<li style="text-align:center;color:#bbb;font-size:0.8em;padding:6px;">첫 댓글을 남겨보세요!</li>'
-                    : taskComments.map(c => {
-                        const ts = new Date(c.timestamp).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
-                        return `<li class="task-comment-item"><span class="task-comment-author">${c.name}</span><span class="task-comment-content">${c.content}</span><span class="task-comment-time">${ts}</span></li>`;
-                    }).join('');
+                const commentCount = (dbData.taskComments || []).filter(c => c.taskId === taskId).length;
 
                 const card = document.createElement('div');
                 card.className = 'day-detail-card';
@@ -789,6 +803,7 @@
                     <div class="task-reaction-bar">
                         <span class="bone-score-disp">🦴 <span id="bone-avg-${sid}">${avgBone !== null ? avgBone : '-'}</span>/10 <span id="bone-rater-${sid}" class="bone-rater-count">(${raterCnt}명 평가)</span></span>
                         <button id="fire-btn-${sid}" class="fire-btn${myFired ? ' fired' : ''}" onclick="toggleFire(window._dcTaskIds[${tidx}])">🔥 <span id="fire-cnt-${sid}">${fireCount}</span></button>
+                        <button id="comment-btn-${sid}" class="comment-btn${commentCount > 0 ? ' has-comments' : ''}" onclick="openCommentModal(window._dcTaskIds[${tidx}], '${t.name}')">💬 <span id="comment-cnt-${sid}">${commentCount}</span></button>
                     </div>
                     <div class="bone-rate-wrap">
                         <div class="bone-rate-label">내 뼈갈지수: <strong id="bone-val-${sid}">${myBone}</strong> / 10</div>
@@ -796,14 +811,6 @@
                             oninput="document.getElementById('bone-val-${sid}').textContent=this.value"
                             onchange="saveBoneScore(window._dcTaskIds[${tidx}], this.value)">
                         <div class="bone-slider-ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div>
-                    </div>
-                    <div class="task-comment-section">
-                        <div class="task-comment-section-title">💬 댓글</div>
-                        <ul class="task-comment-list" id="tc-list-${sid}">${commentsHtml}</ul>
-                        <div class="task-comment-input-row">
-                            <input type="text" id="tc-input-${sid}" placeholder="댓글 달기...">
-                            <button onclick="saveTaskComment(window._dcTaskIds[${tidx}])">등록</button>
-                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -1679,34 +1686,55 @@
         renderWeeklyCalendar(); // 메인 그리드 즉시 동기화
     }
 
-    function renderTaskCommentList(taskId) {
-        const sid = taskSafeId(taskId);
-        const listEl = document.getElementById('tc-list-' + sid);
+    let currentCommentTaskId = null;
+
+    function openCommentModal(taskId, taskOwner) {
+        currentCommentTaskId = taskId;
+        document.getElementById('commentModalTitle').textContent = `💬 ${taskOwner}의 성과 댓글`;
+        renderCommentModalList();
+        document.getElementById('commentModalInput').value = '';
+        document.getElementById('commentModal').style.display = 'flex';
+    }
+
+    function closeCommentModal() {
+        document.getElementById('commentModal').style.display = 'none';
+        currentCommentTaskId = null;
+    }
+
+    function renderCommentModalList() {
+        const listEl = document.getElementById('commentModalList');
         if (!listEl) return;
-        const comments = (dbData.taskComments || []).filter(c => c.taskId === taskId);
+        const comments = (dbData.taskComments || []).filter(c => c.taskId === currentCommentTaskId);
         if (comments.length === 0) {
-            listEl.innerHTML = '<li style="text-align:center;color:#bbb;font-size:0.8em;padding:6px;">첫 댓글을 남겨보세요!</li>';
+            listEl.innerHTML = '<li class="comment-modal-empty">아직 댓글이 없어요. 첫 댓글을 남겨보세요!</li>';
             return;
         }
         listEl.innerHTML = comments.map(c => {
             const ts = new Date(c.timestamp).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
             return `<li class="task-comment-item"><span class="task-comment-author">${c.name}</span><span class="task-comment-content">${c.content}</span><span class="task-comment-time">${ts}</span></li>`;
         }).join('');
+        listEl.scrollTop = listEl.scrollHeight;
     }
 
-    function saveTaskComment(taskId) {
+    function submitCommentModal() {
         const me = document.getElementById('userName').value.trim();
         if (!me) { alert('이름을 먼저 입력하세요.'); return; }
-        const sid = taskSafeId(taskId);
-        const input = document.getElementById('tc-input-' + sid);
-        if (!input) return;
+        if (!currentCommentTaskId) return;
+        const input = document.getElementById('commentModalInput');
         const content = input.value.trim();
-        if (!content) { alert('댓글 내용을 입력하세요.'); return; }
-        const obj = { id: 'tc_' + Date.now(), taskId, name: me, content, timestamp: new Date().toISOString() };
+        if (!content) return;
+        const obj = { id: 'tc_' + Date.now(), taskId: currentCommentTaskId, name: me, content, timestamp: new Date().toISOString() };
         if (!dbData.taskComments) dbData.taskComments = [];
         dbData.taskComments.push(obj);
         input.value = '';
-        renderTaskCommentList(taskId);
+        renderCommentModalList();
+        // 버튼 카운트 업데이트
+        const sid = taskSafeId(currentCommentTaskId);
+        const btn = document.getElementById('comment-btn-' + sid);
+        const cnt = document.getElementById('comment-cnt-' + sid);
+        const newCount = (dbData.taskComments || []).filter(c => c.taskId === currentCommentTaskId).length;
+        if (cnt) cnt.textContent = newCount;
+        if (btn) btn.classList.add('has-comments');
         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTaskComment', ...obj }) });
     }
 
@@ -1715,6 +1743,7 @@
         if(e.target == document.getElementById('dayDetailModal')) closeDayDetail();
         if(e.target == document.getElementById('dietModal')) document.getElementById('dietModal').style.display='none';
         if(e.target == document.getElementById('weeklyCalendarModal')) closeWeeklyCalendarModal();
+        if(e.target == document.getElementById('commentModal')) closeCommentModal();
     }
 </script>
 </body>
