@@ -1684,7 +1684,26 @@
             listEl.appendChild(div);
         });
     }
-    function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }).then(r => r.text()).then(t => { try { const res = JSON.parse(t); if (res && res.error) { showToast('❌ 저장 실패: ' + res.error, true); } else { showToast('✅ 성과 저장 완료!', false); } } catch(e) { showToast('✅ 성과 저장 완료!', false); } }).catch(e => { console.error('saveTask 실패:', e); showToast('❌ 저장 실패. 네트워크를 확인해주세요.', true); }); }
+    function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); showToast('저장 중...', false);
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) })
+            .then(r => r.text())
+            .then(rawText => {
+                console.log('[saveTask] 서버 응답 원문:', rawText.slice(0, 300));
+                // 저장 후 3초 뒤 서버에서 다시 읽어 실제 저장 확인
+                setTimeout(() => {
+                    fetch(SCRIPT_URL + '?action=getAllData')
+                        .then(r => r.text())
+                        .then(text => {
+                            try {
+                                const data = JSON.parse(text);
+                                const saved = (data.tasks || []).some(t => t.date === selectedDateKey && t.name === name);
+                                if (saved) { showToast('✅ 서버 저장 확인됨!', false); }
+                                else { showToast('❌ 서버에 저장 안됨. 콘솔 확인 필요', true); console.error('[saveTask] 서버에 task 없음. POST 응답:', rawText.slice(0,300)); }
+                            } catch(e) { console.error('[saveTask] 검증 파싱 실패:', e); }
+                        });
+                }, 3000);
+            })
+            .catch(e => { console.error('[saveTask] fetch 실패:', e); showToast('❌ 네트워크 오류: ' + e.message, true); }); }
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
