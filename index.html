@@ -264,6 +264,44 @@
             .week-day-avatars img { width: 14px; height: 14px; }
         }
     </style>
+    <style>
+        /* ===== 뼈갈지수 슬라이더 ===== */
+        .bone-score-row { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:0.83em; flex-wrap:wrap; }
+        .bone-score-row > span:first-child { white-space:nowrap; font-weight:bold; color:#555; }
+        .bone-slider { flex:1; min-width:80px; accent-color:#e74c3c; cursor:pointer; }
+        .bone-score-display { white-space:nowrap; color:#e74c3c; font-weight:bold; font-size:0.95em; }
+        .bone-score-my { white-space:nowrap; color:#888; font-size:0.9em; }
+
+        /* ===== 카드 액션 버튼 행 (불 이모지 + 댓글) ===== */
+        .card-actions-row { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+        .btn-fire, .btn-comment { border:1px solid #eee; border-radius:20px; padding:4px 12px;
+            background:#f7f7f7; cursor:pointer; font-size:0.9em; transition:background 0.15s; }
+        .btn-fire:hover { background:#ffe8e8; }
+        .btn-fire.active { background:#ffe0e0; border-color:#f5a0a0; }
+        .btn-comment:hover { background:#eaf0ff; }
+
+        /* ===== 랭킹 테두리 & 뱃지 ===== */
+        .rank-1 { border:3px solid #FFD700 !important; box-shadow:0 0 8px rgba(255,215,0,0.5) !important; }
+        .rank-2 { border:3px solid #C0C0C0 !important; box-shadow:0 0 6px rgba(192,192,192,0.5) !important; }
+        .rank-3 { border:3px solid #CD7F32 !important; box-shadow:0 0 6px rgba(205,127,50,0.4) !important; }
+        .rank-last { border:3px dashed #bbb !important; }
+        .rank-badge { font-size:1.1em; vertical-align:middle; }
+
+        /* ===== 성과 댓글 모달 ===== */
+        #taskCommentModal .modal-content { max-width:500px; }
+        .task-comment-list { list-style:none; padding:0; margin:0 0 16px 0; max-height:300px; overflow-y:auto; }
+        .task-comment-item { padding:10px 12px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+        .task-comment-item:last-child { border-bottom:none; }
+        .task-comment-body { flex:1; }
+        .task-comment-author { font-weight:bold; color:#e74c3c; margin-right:6px; font-size:0.9em; }
+        .task-comment-content { color:#333; word-break:break-all; white-space:pre-wrap; font-size:0.92em; }
+        .task-comment-actions { display:flex; gap:4px; flex-shrink:0; }
+        .task-comment-actions button { border:none; background:none; cursor:pointer; font-size:0.8em; color:#aaa; padding:2px 4px; border-radius:4px; }
+        .task-comment-actions button:hover { color:#e74c3c; background:#fff0f0; }
+        .task-comment-edit-input { width:100%; padding:6px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-size:0.92em; margin-top:4px; resize:vertical; }
+        #taskCommentInput { width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box; min-height:60px; resize:vertical; font-size:0.92em; }
+        .task-comment-empty { text-align:center; color:#bbb; padding:20px 0; font-size:0.9em; }
+    </style>
 </head>
 <body>
 
@@ -478,10 +516,27 @@
     </div>
 </div>
 
+<!-- 성과 댓글 모달 -->
+<div id="taskCommentModal" class="modal">
+    <div class="modal-content" id="taskCommentModalContent">
+        <div class="modal-header">
+            <span id="taskCommentTitle">성과 댓글</span>
+            <span class="close-btn" onclick="closeTaskComments()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <ul class="task-comment-list" id="taskCommentList"></ul>
+            <div style="display:flex; gap:8px; align-items:flex-start;">
+                <textarea id="taskCommentInput" placeholder="댓글을 입력하세요..."></textarea>
+                <button class="btn-submit" style="white-space:nowrap; padding:8px 14px; margin-top:0;" onclick="saveTaskComment()">작성</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentDate = new Date();
     let weekModalDate = new Date();
-    let dbData = { tasks: [], feeds: [], comments: [], members: [], groupMembers: [], groupPosts: [], dietLogs: [], groups: [] };
+    let dbData = { tasks: [], feeds: [], comments: [], members: [], groupMembers: [], groupPosts: [], dietLogs: [], groups: [], deletedDefaultGroups: [], taskRatings: [], taskLikes: [], taskComments: [] };
     let selectedDateKey = null;
     let currentAvatarSeed = "";
     let currentGroup = null;
@@ -520,10 +575,19 @@
         fetch(SCRIPT_URL + "?action=getAllData")
             .then(response => response.json())
             .then(data => {
-                dbData = data;
-                if(!dbData.groups) dbData.groups = [];
-                if(!dbData.deletedDefaultGroups) dbData.deletedDefaultGroups = [];
-                if(!dbData.members) dbData.members = [];
+                // 배열별 안전 병합 — 서버가 필드를 빠뜨려도 기존 데이터 보존
+                dbData.tasks        = Array.isArray(data.tasks)        ? data.tasks        : dbData.tasks        || [];
+                dbData.feeds        = Array.isArray(data.feeds)        ? data.feeds        : dbData.feeds        || [];
+                dbData.comments     = Array.isArray(data.comments)     ? data.comments     : dbData.comments     || [];
+                dbData.members      = Array.isArray(data.members)      ? data.members      : dbData.members      || [];
+                dbData.groupMembers = Array.isArray(data.groupMembers) ? data.groupMembers : dbData.groupMembers || [];
+                dbData.groupPosts   = Array.isArray(data.groupPosts)   ? data.groupPosts   : dbData.groupPosts   || [];
+                dbData.dietLogs     = Array.isArray(data.dietLogs)     ? data.dietLogs     : dbData.dietLogs     || [];
+                dbData.groups       = Array.isArray(data.groups)       ? data.groups       : dbData.groups       || [];
+                dbData.deletedDefaultGroups = Array.isArray(data.deletedDefaultGroups) ? data.deletedDefaultGroups : dbData.deletedDefaultGroups || [];
+                dbData.taskRatings  = Array.isArray(data.taskRatings)  ? data.taskRatings  : dbData.taskRatings  || [];
+                dbData.taskLikes    = Array.isArray(data.taskLikes)    ? data.taskLikes    : dbData.taskLikes    || [];
+                dbData.taskComments = Array.isArray(data.taskComments) ? data.taskComments : dbData.taskComments || [];
                 // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지)
                 if (dbData.members.length > 0) {
                     const memberMap = {};
@@ -604,21 +668,26 @@
         const myName = document.getElementById('userName').value.trim();
         const todaysTasks = dbData.tasks ? dbData.tasks.filter(t => t.date === dateKey) : [];
         const submittedNames = new Set(todaysTasks.map(t => t.name));
+        const rankings = getBoneRankings(dateKey);
 
         // 작성한 사람 카드
         todaysTasks.forEach(item => {
             let parsed = parseTaskContent(item.task);
             const card = document.createElement('div');
             card.className = 'submitter-card submitted';
+            card.dataset.name = item.name;
             if (myName && item.name === myName) card.classList.add('me');
+            const rInfo = rankings[item.name];
+            if (rInfo && rInfo.rankClass) card.classList.add(rInfo.rankClass);
             card.onclick = () => openDayDetail(dateKey);
             const memberInfo = dbData.members ? dbData.members.find(m => m.name === item.name) : null;
             const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`;
+            const rankBadge = rInfo ? getRankBadge(rInfo.rankClass) : '';
             card.innerHTML = `
                 <img src="${avatarUrl}" class="card-avatar">
                 <div class="card-info">
                     <div class="card-top-row">
-                        <span class="card-name">${item.name}</span>
+                        <span class="card-name">${item.name}<span class="rank-badge">${rankBadge}</span></span>
                         <span class="card-badge badge-done">완료</span>
                     </div>
                     <span class="rating-badge">${renderStars(parsed.rating)}</span>
@@ -665,6 +734,7 @@
 
         const todaysTasks = dbData.tasks ? dbData.tasks.filter(t => t.date === date) : [];
         const submittedNames = new Set(todaysTasks.map(t => t.name));
+        const myName = document.getElementById('userName').value.trim();
 
         // 미작성 멤버 목록
         const unsubmitted = dbData.members ? dbData.members.filter(m => !submittedNames.has(m.name) && !isBeforeFirstTask(m.name, date)) : [];
@@ -674,6 +744,9 @@
             document.getElementById('dayDetailModal').style.display = 'flex';
             return;
         }
+
+        // 뼈갈지수 랭킹 계산
+        const rankings = getBoneRankings(date);
 
         // 작성 완료 섹션
         if (todaysTasks.length > 0) {
@@ -701,17 +774,51 @@
                         itemsHtml += `<div class="day-detail-item"><span class="day-detail-tag" style="background:${tagColor};${textColor}">${item.category}</span><span class="day-detail-content">${item.content}</span></div>`;
                     });
                 }
+
+                // 뼈갈지수 데이터 계산
+                const dayRatings = (dbData.taskRatings || []).filter(r => r.date === date && r.targetName === t.name);
+                const myRating = myName ? dayRatings.find(r => r.raterName === myName) : null;
+                const myScore = myRating ? myRating.score : 5;
+                const avgScore = dayRatings.length ? (dayRatings.reduce((a,r)=>a+parseFloat(r.score),0)/dayRatings.length).toFixed(1) : '-';
+                const avgDisplay = dayRatings.length ? `avg: ${avgScore}점 (${dayRatings.length}명)` : '아직 평가 없음';
+
+                // 불 이모지
+                const likeCount = (dbData.taskLikes || []).filter(l => l.date === date && l.targetName === t.name).length;
+                const liked = myName && (dbData.taskLikes || []).some(l => l.date === date && l.targetName === t.name && l.likerName === myName);
+
+                // 댓글 수
+                const commentCount = (dbData.taskComments || []).filter(c => c.date === date && c.targetName === t.name).length;
+
+                // 랭킹
+                const rInfo = rankings[t.name];
+                const rankClass = rInfo ? rInfo.rankClass : '';
+                const rankBadge = rInfo ? getRankBadge(rankClass) : '';
+
                 const card = document.createElement('div');
-                card.className = 'day-detail-card';
+                card.className = 'day-detail-card' + (rankClass ? ' ' + rankClass : '');
+                card.dataset.name = t.name;
                 card.innerHTML = `
                     <div class="day-detail-profile">
                         <img src="${avatarUrl}">
                         <div class="profile-info">
-                            <div class="profile-name">${t.name}</div>
+                            <div class="profile-name">${t.name}<span class="rank-badge">${rankBadge}</span></div>
                             <div class="profile-rating">${renderStars(parsed.rating)}</div>
                         </div>
                     </div>
                     <div class="day-detail-items">${itemsHtml}</div>
+                    <div class="bone-score-row">
+                        <span>🦴 뼈갈지수</span>
+                        <input type="range" min="1" max="10" step="1" class="bone-slider"
+                               value="${myScore}" data-date="${date}" data-target="${t.name}"
+                               oninput="updateBoneScore(this,'${date}','${t.name}')">
+                        <span class="bone-score-display">${avgDisplay}</span>
+                    </div>
+                    <div class="card-actions-row">
+                        <button class="btn-fire${liked?' active':''}" data-date="${date}" data-target="${t.name}"
+                                onclick="toggleTaskLike('${date}','${t.name}')">🔥 ${likeCount}</button>
+                        <button class="btn-comment" data-date="${date}" data-target="${t.name}"
+                                onclick="openTaskComments('${date}','${t.name}')">💬 ${commentCount}</button>
+                    </div>
                 `;
                 grid.appendChild(card);
             });
@@ -1512,6 +1619,183 @@
     function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const bannerColor = document.getElementById('inputBannerColor').value; const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt, bannerColor: bannerColor }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); localStorage.setItem('study_profile_' + name, JSON.stringify({ bio: bio, avatar: avatarUrl, createdAt: createdAt, bannerColor: bannerColor })); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
     function renderStars(rating) { const r = parseFloat(rating) || 0; const pct = Math.min(r / 5 * 100, 100); return `<span class="star-rating"><span>★★★★★</span><span class="star-fill" style="width:${pct}%">★★★★★</span></span> ${rating || '0'}`; }
     function parseTaskContent(taskStr) { try { if (taskStr.trim().startsWith("{")) return JSON.parse(taskStr); } catch (e) {} return { rating: null, items: [{ category: '기존', content: taskStr }] }; }
+
+    // ===== 뼈갈지수 랭킹 계산 =====
+    function getBoneRankings(dateKey) {
+        const ratings = (dbData.taskRatings || []).filter(r => r.date === dateKey);
+        const scoreMap = {};
+        ratings.forEach(r => {
+            if (!scoreMap[r.targetName]) scoreMap[r.targetName] = [];
+            scoreMap[r.targetName].push(parseFloat(r.score));
+        });
+        const avgs = Object.entries(scoreMap)
+            .map(([name, scores]) => ({ name, avg: +(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1), count: scores.length }))
+            .filter(e => !isNaN(e.avg))
+            .sort((a,b) => b.avg - a.avg);
+        if (avgs.length < 2) return {};
+        const result = {};
+        avgs.forEach(e => { result[e.name] = { avg: e.avg, count: e.count, rankClass: '' }; });
+        const n = avgs.length;
+        // 메달: 꼴등과 겹치지 않게 (2명→1위/꼴등, 3명→1위/2위/꼴등, 4명+→1/2/3/꼴등)
+        if (n > 1) result[avgs[0].name].rankClass = 'rank-1';
+        if (n > 2) result[avgs[1].name].rankClass = 'rank-2';
+        if (n > 3) result[avgs[2].name].rankClass = 'rank-3';
+        result[avgs[n-1].name].rankClass = 'rank-last'; // 꼴등 (3명 이하면 rank-3 덮어씀)
+        return result;
+    }
+
+    function getRankBadge(rankClass) {
+        if (rankClass === 'rank-1') return '🥇';
+        if (rankClass === 'rank-2') return '🥈';
+        if (rankClass === 'rank-3') return '🥉';
+        if (rankClass === 'rank-last') return '💀';
+        return '';
+    }
+
+    // 랭킹 클래스를 열려있는 모달+메인 그리드에 동적 반영
+    function _updateDetailRankings(dateKey) {
+        const rankings = getBoneRankings(dateKey);
+        ['day-detail-card', 'submitter-card'].forEach(cls => {
+            document.querySelectorAll(`.${cls}[data-name]`).forEach(card => {
+                const name = card.dataset.name;
+                card.classList.remove('rank-1','rank-2','rank-3','rank-last');
+                const r = rankings[name];
+                if (r && r.rankClass) {
+                    card.classList.add(r.rankClass);
+                    const badge = card.querySelector('.rank-badge');
+                    if (badge) badge.textContent = getRankBadge(r.rankClass);
+                } else {
+                    const badge = card.querySelector('.rank-badge');
+                    if (badge) badge.textContent = '';
+                }
+            });
+        });
+    }
+
+    // ===== 뼈갈지수 슬라이더 저장 =====
+    let _boneScoreTimer = null;
+    function updateBoneScore(input, date, targetName) {
+        const myName = document.getElementById('userName').value.trim();
+        if (!myName) { alert("이름을 입력하세요."); return; }
+        const score = parseInt(input.value);
+        if (!dbData.taskRatings) dbData.taskRatings = [];
+        const idx = dbData.taskRatings.findIndex(r => r.date === date && r.raterName === myName && r.targetName === targetName);
+        if (idx >= 0) dbData.taskRatings[idx].score = score;
+        else dbData.taskRatings.push({ date, raterName: myName, targetName, score });
+        // avg 표시 업데이트
+        const dayRatings = dbData.taskRatings.filter(r => r.date === date && r.targetName === targetName);
+        const avg = (dayRatings.reduce((a,r)=>a+parseFloat(r.score),0)/dayRatings.length).toFixed(1);
+        const display = input.parentElement.querySelector('.bone-score-display');
+        if (display) display.textContent = `avg: ${avg}점 (${dayRatings.length}명)`;
+        _updateDetailRankings(date);
+        clearTimeout(_boneScoreTimer);
+        _boneScoreTimer = setTimeout(() => {
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTaskRating', date, raterName: myName, targetName, score }) });
+        }, 400);
+    }
+
+    // ===== 불 이모지 좋아요 =====
+    function toggleTaskLike(date, targetName) {
+        const myName = document.getElementById('userName').value.trim();
+        if (!myName) { alert("이름을 입력하세요."); return; }
+        if (!dbData.taskLikes) dbData.taskLikes = [];
+        const existing = dbData.taskLikes.findIndex(l => l.date === date && l.targetName === targetName && l.likerName === myName);
+        if (existing >= 0) {
+            dbData.taskLikes.splice(existing, 1);
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteTaskLike', date, targetName, likerName: myName }) });
+        } else {
+            dbData.taskLikes.push({ date, targetName, likerName: myName });
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTaskLike', date, targetName, likerName: myName }) });
+        }
+        const btn = document.querySelector(`.btn-fire[data-date="${date}"][data-target="${targetName}"]`);
+        if (btn) {
+            const count = dbData.taskLikes.filter(l => l.date === date && l.targetName === targetName).length;
+            const liked = dbData.taskLikes.some(l => l.date === date && l.targetName === targetName && l.likerName === myName);
+            btn.textContent = `🔥 ${count}`;
+            btn.classList.toggle('active', liked);
+        }
+    }
+
+    // ===== 성과 댓글 모달 =====
+    let _tcDate = null, _tcTarget = null;
+    function openTaskComments(date, targetName) {
+        _tcDate = date; _tcTarget = targetName;
+        document.getElementById('taskCommentTitle').textContent = `${targetName}의 성과 댓글`;
+        document.getElementById('taskCommentInput').value = '';
+        renderTaskComments();
+        document.getElementById('taskCommentModal').style.display = 'flex';
+    }
+    function closeTaskComments() {
+        document.getElementById('taskCommentModal').style.display = 'none';
+        _tcDate = null; _tcTarget = null;
+    }
+    function renderTaskComments() {
+        const list = document.getElementById('taskCommentList');
+        const myName = document.getElementById('userName').value.trim();
+        const comments = (dbData.taskComments || []).filter(c => c.date === _tcDate && c.targetName === _tcTarget);
+        if (comments.length === 0) {
+            list.innerHTML = '<li class="task-comment-empty">첫 댓글을 남겨보세요!</li>';
+            return;
+        }
+        list.innerHTML = '';
+        comments.forEach(c => {
+            const li = document.createElement('li');
+            li.className = 'task-comment-item';
+            li.id = `tc-${c.id}`;
+            const isMine = myName && c.authorName === myName;
+            li.innerHTML = `<div class="task-comment-body"><span class="task-comment-author">${c.authorName}</span><span class="task-comment-content" id="tc-content-${c.id}">${c.content}</span></div>${isMine ? `<div class="task-comment-actions"><button onclick="startEditTaskComment('${c.id}')">수정</button><button onclick="deleteTaskComment('${c.id}')">삭제</button></div>` : ''}`;
+            list.appendChild(li);
+        });
+    }
+    function saveTaskComment() {
+        const myName = document.getElementById('userName').value.trim();
+        const content = document.getElementById('taskCommentInput').value.trim();
+        if (!myName) { alert("이름을 입력하세요."); return; }
+        if (!content) { alert("댓글 내용을 입력하세요."); return; }
+        const id = 'tc_' + Date.now();
+        const newData = { id, date: _tcDate, targetName: _tcTarget, authorName: myName, content };
+        if (!dbData.taskComments) dbData.taskComments = [];
+        dbData.taskComments.push(newData);
+        document.getElementById('taskCommentInput').value = '';
+        renderTaskComments();
+        _refreshCommentBtn(_tcDate, _tcTarget);
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTaskComment', ...newData }) });
+    }
+    function startEditTaskComment(id) {
+        const span = document.getElementById(`tc-content-${id}`);
+        if (!span) return;
+        const current = span.textContent;
+        const ta = document.createElement('textarea');
+        ta.className = 'task-comment-edit-input';
+        ta.value = current;
+        span.replaceWith(ta);
+        ta.focus();
+        const btns = document.querySelector(`#tc-${id} .task-comment-actions`);
+        if (btns) btns.innerHTML = `<button onclick="confirmEditTaskComment('${id}')">저장</button><button onclick="renderTaskComments()">취소</button>`;
+    }
+    function confirmEditTaskComment(id) {
+        const li = document.getElementById(`tc-${id}`);
+        const ta = li ? li.querySelector('.task-comment-edit-input') : null;
+        if (!ta) return;
+        const newContent = ta.value.trim();
+        if (!newContent) { alert("내용을 입력하세요."); return; }
+        const idx = dbData.taskComments.findIndex(c => c.id === id);
+        if (idx >= 0) dbData.taskComments[idx].content = newContent;
+        renderTaskComments();
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'editTaskComment', id, content: newContent }) });
+    }
+    function deleteTaskComment(id) {
+        if (!confirm("댓글을 삭제하시겠습니까?")) return;
+        dbData.taskComments = (dbData.taskComments || []).filter(c => c.id !== id);
+        renderTaskComments();
+        _refreshCommentBtn(_tcDate, _tcTarget);
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteTaskComment', id }) });
+    }
+    function _refreshCommentBtn(date, targetName) {
+        const btn = document.querySelector(`.btn-comment[data-date="${date}"][data-target="${targetName}"]`);
+        if (btn) btn.textContent = `💬 ${(dbData.taskComments||[]).filter(c=>c.date===date&&c.targetName===targetName).length}`;
+    }
+
     function updateAvatarPreview() { const style = document.getElementById('avatarStyle').value; const seed = currentAvatarSeed || "default"; document.getElementById('avatarPreview').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`; }
     function randomizeAvatar() { currentAvatarSeed = Math.random().toString(36).substring(7); updateAvatarPreview(); }
     let currentAvatarMode = 'random';
@@ -1524,6 +1808,7 @@
         if(e.target == document.getElementById('dayDetailModal')) closeDayDetail();
         if(e.target == document.getElementById('dietModal')) document.getElementById('dietModal').style.display='none';
         if(e.target == document.getElementById('weeklyCalendarModal')) closeWeeklyCalendarModal();
+        if(e.target == document.getElementById('taskCommentModal')) closeTaskComments();
     }
 </script>
 </body>
