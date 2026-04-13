@@ -625,9 +625,9 @@
                     dbData.members.forEach(m => { if (m.name) memberMap[m.name.trim()] = { ...m, name: m.name.trim() }; });
                     dbData.members = Object.values(memberMap);
                 }
-                // tasks 이름 공백 정규화 + 중복 제거 (같은 날짜+이름이면 마지막 항목 유지)
+                // tasks 이름 공백 정규화 + 날짜 형식 정규화 + 중복 제거 (같은 날짜+이름이면 마지막 항목 유지)
                 if (dbData.tasks && dbData.tasks.length > 0) {
-                    dbData.tasks = dbData.tasks.map(t => ({ ...t, name: t.name ? t.name.trim() : t.name, date: t.date ? t.date.trim() : t.date }));
+                    dbData.tasks = dbData.tasks.map(t => ({ ...t, name: t.name ? t.name.trim() : t.name, date: normalizeDateKey(t.date) }));
                     const taskMap = {};
                     dbData.tasks.forEach(t => { if (t.date && t.name) taskMap[`${t.date}_${t.name}`] = t; });
                     dbData.tasks = Object.values(taskMap);
@@ -698,6 +698,22 @@
 
     // dateKey("2025-2-15") → Date 객체로 변환
     function parseDateKey(dk) { const p = dk.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+
+    // 서버에서 온 날짜값을 "YYYY-M-D" 형식으로 정규화
+    // Google Sheets 자동변환으로 "2026-04-13", "2026-04-12T15:00:00.000Z" 등으로 올 수 있음
+    function normalizeDateKey(val) {
+        if (!val) return val;
+        const s = String(val).trim();
+        // ISO 형식 (e.g. "2026-04-12T15:00:00.000Z") → 로컬 타임존 기준 날짜
+        if (s.includes('T')) {
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+        }
+        // 제로패딩 제거: "2026-04-13" → "2026-4-13"
+        const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (m) return `${m[1]}-${parseInt(m[2])}-${parseInt(m[3])}`;
+        return s;
+    }
 
     // 멤버의 첫 성과 날짜 이전인지 확인 (첫 성과 없으면 true = 숨김)
     function isBeforeFirstTask(memberName, dateKey) {
