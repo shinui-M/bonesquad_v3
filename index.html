@@ -684,6 +684,11 @@
                     if (me && me.bannerColor) document.getElementById('inputBannerColor').value = me.bannerColor;
                 }
                 loadingEl.style.display = 'none';
+                // ===== 임시 디버그 =====
+                const taskCount = (dbData.tasks||[]).length;
+                const recentDates = (dbData.tasks||[]).slice(-3).map(t=>t.date+'('+t.name+')').join(', ');
+                showToast('tasks 로드: '+taskCount+'개 / 최근: '+recentDates, false);
+                // ======================
             })
             .catch(e => {
                 console.error('loadData 실패:', e);
