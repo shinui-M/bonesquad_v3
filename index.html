@@ -4,7 +4,7 @@
     <script>
         // =====================================================================
         // ▼▼▼ [필수] 구글 앱스 스크립트 배포 주소를 따옴표 안에 넣으세요 ▼▼▼
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwAD9eBoWVbJ3tmJds8aGyIKTIOHOYodz0HyMrLd_f6_TnJxZOEFvlA4IXubhFJDmkFsQ/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxF5yIZ9xqDLbhEbD8oL8o-Fyiih19yan31-RAdBSwvn46zvAtFoZRjMPgP56hHeHg7QA/exec";
         // =====================================================================
     </script>
     <meta charset="UTF-8">
@@ -684,11 +684,6 @@
                     if (me && me.bannerColor) document.getElementById('inputBannerColor').value = me.bannerColor;
                 }
                 loadingEl.style.display = 'none';
-                // ===== 임시 디버그 =====
-                const taskCount = (dbData.tasks||[]).length;
-                const recentDates = (dbData.tasks||[]).slice(-3).map(t=>t.date+'('+t.name+')').join(', ');
-                showToast('tasks 로드: '+taskCount+'개 / 최근: '+recentDates, false);
-                // ======================
             })
             .catch(e => {
                 console.error('loadData 실패:', e);
@@ -1689,31 +1684,7 @@
             listEl.appendChild(div);
         });
     }
-    function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); showToast('저장 중...', false);
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) })
-            .then(r => r.text())
-            .then(rawText => {
-                // POST 응답을 화면에 직접 표시 (디버깅용)
-                let postResult = '(파싱불가)';
-                try { const res = JSON.parse(rawText); postResult = JSON.stringify(res); } catch(e) { postResult = rawText.slice(0, 80); }
-                showToast('POST응답: ' + postResult, postResult.includes('error'));
-                // 6초 뒤 서버에서 다시 읽어 실제 저장 확인
-                setTimeout(() => {
-                    fetch(SCRIPT_URL + '?action=getAllData')
-                        .then(r => r.text())
-                        .then(text => {
-                            try {
-                                const data = JSON.parse(text);
-                                const saved = (data.tasks || []).some(t => t.date === selectedDateKey && t.name === name);
-                                const taskCount = (data.tasks || []).length;
-                                if (saved) { showToast('✅ 서버 저장 확인! (총 ' + taskCount + '개)', false); }
-                                else { showToast('❌ tasks에 없음. POST응답=' + postResult.slice(0,40), true); }
-                            } catch(e) { showToast('❌ GET 파싱 실패: ' + e.message, true); }
-                        })
-                        .catch(e => showToast('❌ GET 실패: ' + e.message, true));
-                }, 6000);
-            })
-            .catch(e => { showToast('❌ POST 네트워크 오류: ' + e.message, true); }); }
+    function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
