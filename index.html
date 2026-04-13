@@ -545,6 +545,26 @@
 </div>
 
 <script>
+    // GAS POST 요청 시 Content-Type 헤더 자동 추가 (302 redirect 시 body 유실 방지)
+    (function() {
+        const _origFetch = window.fetch;
+        window.fetch = function(url, options) {
+            if (typeof url === 'string' && url === SCRIPT_URL && options && options.method === 'POST' && !(options.headers && options.headers['Content-Type'])) {
+                options = Object.assign({}, options, { headers: Object.assign({}, options.headers, { 'Content-Type': 'text/plain;charset=utf-8' }) });
+            }
+            return _origFetch.apply(this, arguments);
+        };
+    })();
+
+    function showToast(msg, isError) {
+        let t = document.getElementById('_toast');
+        if (!t) { t = document.createElement('div'); t.id = '_toast'; Object.assign(t.style, { position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', padding:'10px 20px', borderRadius:'8px', fontSize:'14px', fontWeight:'bold', zIndex:'9999', transition:'opacity 0.4s', pointerEvents:'none' }); document.body.appendChild(t); }
+        t.textContent = msg;
+        Object.assign(t.style, { background: isError ? '#e74c3c' : '#27ae60', color:'#fff', opacity:'1' });
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+    }
+
     let currentDate = new Date();
     let weekModalDate = new Date();
     let dbData = { tasks: [], feeds: [], comments: [], members: [], groupMembers: [], groupPosts: [], dietLogs: [], groups: [], taskReactions: [], taskComments: [] };
@@ -1664,7 +1684,7 @@
             listEl.appendChild(div);
         });
     }
-    function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
+    function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }).then(r => r.text()).then(t => { try { const res = JSON.parse(t); if (res && res.error) { showToast('❌ 저장 실패: ' + res.error, true); } else { showToast('✅ 성과 저장 완료!', false); } } catch(e) { showToast('✅ 성과 저장 완료!', false); } }).catch(e => { console.error('saveTask 실패:', e); showToast('❌ 저장 실패. 네트워크를 확인해주세요.', true); }); }
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
