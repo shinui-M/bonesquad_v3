@@ -577,6 +577,8 @@
             .then(data => {
                 // 배열별 안전 병합 — 서버가 필드를 빠뜨려도 기존 데이터 보존
                 dbData.tasks        = (Array.isArray(data.tasks) ? data.tasks : dbData.tasks || []).map(t => ({...t, date: _normDate(t.date)}));
+                // 서버 중복 행 방어: 같은 date+name의 마지막 항목만 유지
+                const _taskMap = new Map(); dbData.tasks.forEach(t => _taskMap.set(t.date + '|' + t.name, t)); dbData.tasks = [..._taskMap.values()];
                 dbData.feeds        = Array.isArray(data.feeds)        ? data.feeds        : dbData.feeds        || [];
                 dbData.comments     = Array.isArray(data.comments)     ? data.comments     : dbData.comments     || [];
                 dbData.members      = Array.isArray(data.members)      ? data.members      : dbData.members      || [];
