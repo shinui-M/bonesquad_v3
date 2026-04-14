@@ -576,7 +576,7 @@
             .then(response => response.json())
             .then(data => {
                 // 배열별 안전 병합 — 서버가 필드를 빠뜨려도 기존 데이터 보존
-                dbData.tasks        = Array.isArray(data.tasks)        ? data.tasks        : dbData.tasks        || [];
+                dbData.tasks        = (Array.isArray(data.tasks) ? data.tasks : dbData.tasks || []).map(t => ({...t, date: _normDate(t.date)}));
                 dbData.feeds        = Array.isArray(data.feeds)        ? data.feeds        : dbData.feeds        || [];
                 dbData.comments     = Array.isArray(data.comments)     ? data.comments     : dbData.comments     || [];
                 dbData.members      = Array.isArray(data.members)      ? data.members      : dbData.members      || [];
@@ -648,6 +648,16 @@
 
     // dateKey("2025-2-15") → Date 객체로 변환
     function parseDateKey(dk) { const p = dk.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+
+    // GAS가 날짜를 Date 객체로 자동변환 → "Mon Apr 14 2026..." 형태로 반환될 수 있음
+    // 이를 "YYYY-M-D" 형식으로 정규화
+    function _normDate(d) {
+        if (!d) return d;
+        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(d)) return d;
+        const dt = new Date(d);
+        if (!isNaN(dt.getTime())) return dt.getFullYear() + '-' + (dt.getMonth()+1) + '-' + dt.getDate();
+        return d;
+    }
 
     // 멤버의 첫 성과 날짜 이전인지 확인 (첫 성과 없으면 true = 숨김)
     function isBeforeFirstTask(memberName, dateKey) {
