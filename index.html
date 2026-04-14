@@ -572,12 +572,9 @@
         const loadingEl = document.getElementById('loadingMsg');
         if(typeof SCRIPT_URL === 'undefined' || SCRIPT_URL.includes("여기에")) { loadingEl.style.display='none'; alert("스크립트 주소를 넣어주세요!"); return; }
         loadingEl.style.display = 'flex';
-        const _ctrl = new AbortController();
-        const _timeout = setTimeout(() => _ctrl.abort(), 15000);
-        fetch(SCRIPT_URL + "?action=getAllData", { signal: _ctrl.signal })
+        fetch(SCRIPT_URL + "?action=getAllData")
             .then(response => response.json())
             .then(data => {
-                clearTimeout(_timeout);
                 // 배열별 안전 병합 — 서버가 필드를 빠뜨려도 기존 데이터 보존
                 dbData.tasks        = Array.isArray(data.tasks)        ? data.tasks        : dbData.tasks        || [];
                 dbData.feeds        = Array.isArray(data.feeds)        ? data.feeds        : dbData.feeds        || [];
@@ -646,12 +643,7 @@
                 }
                 loadingEl.style.display = 'none';
             })
-            .catch(e => {
-                clearTimeout(_timeout);
-                console.error('loadData 오류:', e);
-                renderWeeklyCalendar(); renderFeed(); renderMembers(); renderGroupList();
-                loadingEl.style.display='none';
-            });
+            .catch(e => { console.error(e); loadingEl.style.display='none'; });
     }
 
     // dateKey("2025-2-15") → Date 객체로 변환
