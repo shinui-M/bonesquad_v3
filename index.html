@@ -12,6 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#e74c3c">
+    <link rel="preconnect" href="https://api.dicebear.com">
     <title>뼈갈단 V3 </title>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8f9fa; color: #333; margin: 0; }
@@ -556,80 +557,91 @@
         if(currentGroup) enterGroup(currentGroup);
     });
 
+    function _applyData(data, restoreForm) {
+        // 배열별 안전 병합 — 서버가 필드를 빠뜨려도 기존 데이터 보존
+        dbData.tasks        = (Array.isArray(data.tasks) ? data.tasks : dbData.tasks || []).map(t => ({...t, date: _normDate(t.date)}));
+        // 서버 중복 행 방어: 같은 date+name의 마지막 항목만 유지
+        const _taskMap = new Map(); dbData.tasks.forEach(t => _taskMap.set(t.date + '|' + t.name, t)); dbData.tasks = [..._taskMap.values()];
+        dbData.feeds        = Array.isArray(data.feeds)        ? data.feeds        : dbData.feeds        || [];
+        dbData.comments     = Array.isArray(data.comments)     ? data.comments     : dbData.comments     || [];
+        dbData.members      = Array.isArray(data.members)      ? data.members      : dbData.members      || [];
+        dbData.groupMembers = Array.isArray(data.groupMembers) ? data.groupMembers : dbData.groupMembers || [];
+        dbData.groupPosts   = Array.isArray(data.groupPosts)   ? data.groupPosts   : dbData.groupPosts   || [];
+        dbData.dietLogs     = Array.isArray(data.dietLogs)     ? data.dietLogs     : dbData.dietLogs     || [];
+        dbData.groups       = Array.isArray(data.groups)       ? data.groups       : dbData.groups       || [];
+        dbData.deletedDefaultGroups = Array.isArray(data.deletedDefaultGroups) ? data.deletedDefaultGroups : dbData.deletedDefaultGroups || [];
+        dbData.taskLikes    = Array.isArray(data.taskLikes)    ? data.taskLikes    : dbData.taskLikes    || [];
+        dbData.taskComments = Array.isArray(data.taskComments) ? data.taskComments : dbData.taskComments || [];
+        // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지)
+        if (dbData.members.length > 0) {
+            const memberMap = {};
+            dbData.members.forEach(m => { memberMap[m.name] = m; });
+            dbData.members = Object.values(memberMap);
+        }
+        // 내 프로필: localStorage 데이터로 덮어쓰기 (렌더링 전에 반영)
+        const savedName = document.getElementById('userName').value.trim();
+        if (savedName) {
+            const localProfile = localStorage.getItem('study_profile_' + savedName);
+            if (localProfile) {
+                const lp = JSON.parse(localProfile);
+                const idx = dbData.members.findIndex(m => m.name === savedName);
+                if (idx >= 0) {
+                    const serverMember = dbData.members[idx];
+                    const hadNoServerColor = !serverMember.bannerColor;
+                    if (lp.bio) serverMember.bio = lp.bio;
+                    if (lp.avatar) serverMember.avatar = lp.avatar;
+                    if (lp.bannerColor) serverMember.bannerColor = lp.bannerColor;
+                    // 서버에 bannerColor가 없으면 자동 동기화 (다른 사람도 볼 수 있도록) — 서버 응답 시에만
+                    if (restoreForm && lp.bannerColor && hadNoServerColor) {
+                        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveMember', name: serverMember.name, bio: serverMember.bio, avatar: serverMember.avatar, createdAt: serverMember.createdAt || lp.createdAt || '', bannerColor: lp.bannerColor }) });
+                    }
+                } else {
+                    dbData.members.push({ name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt, bannerColor: lp.bannerColor });
+                }
+            }
+        }
+        // 데이터 교정 완료 후 렌더링
+        renderWeeklyCalendar();
+        renderFeed();
+        renderMembers();
+        renderGroupList();
+        if(currentGroup) enterGroup(currentGroup);
+        // 폼 필드 복원 — 서버 응답 시에만 (캐시 렌더링 때는 스킵)
+        if (restoreForm && savedName) {
+            const me = dbData.members.find(m => m.name === savedName);
+            if (me && me.avatar) {
+                if (me.avatar.includes('api.dicebear.com')) {
+                    const styleMatch = me.avatar.match(/7\.x\/([^/]+)\//);
+                    const seedMatch = me.avatar.match(/seed=([^&]*)/);
+                    if (styleMatch) document.getElementById('avatarStyle').value = styleMatch[1];
+                    if (seedMatch) currentAvatarSeed = decodeURIComponent(seedMatch[1]);
+                    setAvatarMode('random');
+                    updateAvatarPreview();
+                } else {
+                    document.getElementById('customAvatarUrl').value = me.avatar;
+                    setAvatarMode('custom');
+                }
+            }
+            if (me && me.bio) document.getElementById('inputBio').value = me.bio;
+            if (me && me.bannerColor) document.getElementById('inputBannerColor').value = me.bannerColor;
+        }
+    }
+
     function loadData() {
         const loadingEl = document.getElementById('loadingMsg');
         if(typeof SCRIPT_URL === 'undefined' || SCRIPT_URL.includes("여기에")) { loadingEl.style.display='none'; alert("스크립트 주소를 넣어주세요!"); return; }
-        loadingEl.style.display = 'flex';
+        // 캐시된 데이터가 있으면 즉시 렌더링 (GAS 응답 전에 UI 표시)
+        const cached = sessionStorage.getItem('bs_cache');
+        if (cached) {
+            try { _applyData(JSON.parse(cached), false); } catch(e) {}
+        } else {
+            loadingEl.style.display = 'flex';
+        }
         fetch(SCRIPT_URL + "?action=getAllData")
             .then(response => response.json())
             .then(data => {
-                // 배열별 안전 병합 — 서버가 필드를 빠뜨려도 기존 데이터 보존
-                dbData.tasks        = (Array.isArray(data.tasks) ? data.tasks : dbData.tasks || []).map(t => ({...t, date: _normDate(t.date)}));
-                // 서버 중복 행 방어: 같은 date+name의 마지막 항목만 유지
-                const _taskMap = new Map(); dbData.tasks.forEach(t => _taskMap.set(t.date + '|' + t.name, t)); dbData.tasks = [..._taskMap.values()];
-                dbData.feeds        = Array.isArray(data.feeds)        ? data.feeds        : dbData.feeds        || [];
-                dbData.comments     = Array.isArray(data.comments)     ? data.comments     : dbData.comments     || [];
-                dbData.members      = Array.isArray(data.members)      ? data.members      : dbData.members      || [];
-                dbData.groupMembers = Array.isArray(data.groupMembers) ? data.groupMembers : dbData.groupMembers || [];
-                dbData.groupPosts   = Array.isArray(data.groupPosts)   ? data.groupPosts   : dbData.groupPosts   || [];
-                dbData.dietLogs     = Array.isArray(data.dietLogs)     ? data.dietLogs     : dbData.dietLogs     || [];
-                dbData.groups       = Array.isArray(data.groups)       ? data.groups       : dbData.groups       || [];
-                dbData.deletedDefaultGroups = Array.isArray(data.deletedDefaultGroups) ? data.deletedDefaultGroups : dbData.deletedDefaultGroups || [];
-                dbData.taskLikes    = Array.isArray(data.taskLikes)    ? data.taskLikes    : dbData.taskLikes    || [];
-                dbData.taskComments = Array.isArray(data.taskComments) ? data.taskComments : dbData.taskComments || [];
-                // 멤버 중복 제거 (같은 이름이면 마지막 항목=최신 데이터 유지)
-                if (dbData.members.length > 0) {
-                    const memberMap = {};
-                    dbData.members.forEach(m => { memberMap[m.name] = m; });
-                    dbData.members = Object.values(memberMap);
-                }
-                // 내 프로필: localStorage 데이터로 덮어쓰기 (렌더링 전에 반영)
-                const savedName = document.getElementById('userName').value.trim();
-                if (savedName) {
-                    const localProfile = localStorage.getItem('study_profile_' + savedName);
-                    if (localProfile) {
-                        const lp = JSON.parse(localProfile);
-                        const idx = dbData.members.findIndex(m => m.name === savedName);
-                        if (idx >= 0) {
-                            const serverMember = dbData.members[idx];
-                            const hadNoServerColor = !serverMember.bannerColor;
-                            if (lp.bio) serverMember.bio = lp.bio;
-                            if (lp.avatar) serverMember.avatar = lp.avatar;
-                            if (lp.bannerColor) serverMember.bannerColor = lp.bannerColor;
-                            // 서버에 bannerColor가 없으면 자동 동기화 (다른 사람도 볼 수 있도록)
-                            if (lp.bannerColor && hadNoServerColor) {
-                                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveMember', name: serverMember.name, bio: serverMember.bio, avatar: serverMember.avatar, createdAt: serverMember.createdAt || lp.createdAt || '', bannerColor: lp.bannerColor }) });
-                            }
-                        } else {
-                            dbData.members.push({ name: savedName, bio: lp.bio, avatar: lp.avatar, createdAt: lp.createdAt, bannerColor: lp.bannerColor });
-                        }
-                    }
-                }
-                // 데이터 교정 완료 후 렌더링
-                renderWeeklyCalendar();
-                renderFeed();
-                renderMembers();
-                renderGroupList();
-                if(currentGroup) enterGroup(currentGroup);
-                // 폼 필드 복원
-                if (savedName) {
-                    const me = dbData.members.find(m => m.name === savedName);
-                    if (me && me.avatar) {
-                        if (me.avatar.includes('api.dicebear.com')) {
-                            const styleMatch = me.avatar.match(/7\.x\/([^/]+)\//);
-                            const seedMatch = me.avatar.match(/seed=([^&]*)/);
-                            if (styleMatch) document.getElementById('avatarStyle').value = styleMatch[1];
-                            if (seedMatch) currentAvatarSeed = decodeURIComponent(seedMatch[1]);
-                            setAvatarMode('random');
-                            updateAvatarPreview();
-                        } else {
-                            document.getElementById('customAvatarUrl').value = me.avatar;
-                            setAvatarMode('custom');
-                        }
-                    }
-                    if (me && me.bio) document.getElementById('inputBio').value = me.bio;
-                    if (me && me.bannerColor) document.getElementById('inputBannerColor').value = me.bannerColor;
-                }
+                sessionStorage.setItem('bs_cache', JSON.stringify(data));
+                _applyData(data, true);
                 loadingEl.style.display = 'none';
             })
             .catch(e => { console.error(e); loadingEl.style.display='none'; });
@@ -779,7 +791,7 @@
                 card.dataset.name = t.name;
                 card.innerHTML = `
                     <div class="day-detail-profile">
-                        <img src="${avatarUrl}">
+                        <img src="${avatarUrl}" loading="lazy">
                         <div class="profile-info">
                             <div class="profile-name">${t.name}</div>
                             <div class="profile-rating">${renderStars(parsed.rating)}</div>
@@ -811,7 +823,7 @@
                 const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
                 const card = document.createElement('div');
                 card.className = 'detail-mini-card';
-                card.innerHTML = `<img src="${avatarUrl}"><span class="detail-mini-name">${member.name}</span>`;
+                card.innerHTML = `<img src="${avatarUrl}" loading="lazy"><span class="detail-mini-name">${member.name}</span>`;
                 miniGrid.appendChild(card);
             });
             container.appendChild(miniGrid);
@@ -888,13 +900,13 @@
             dayTasks.forEach(t => {
                 const memberInfo = dbData.members ? dbData.members.find(m => m.name === t.name) : null;
                 const aUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${t.name}`;
-                avatarsHtml += `<img src="${aUrl}" title="${t.name}">`;
+                avatarsHtml += `<img src="${aUrl}" title="${t.name}" loading="lazy">`;
             });
             if (dbData.members) {
                 dbData.members.forEach(m => {
                     if (!submittedNames.has(m.name) && !isBeforeFirstTask(m.name, dKey)) {
                         const aUrl = m.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${m.name}`;
-                        avatarsHtml += `<img src="${aUrl}" class="avatar-faint" title="${m.name} (미작성)">`;
+                        avatarsHtml += `<img src="${aUrl}" class="avatar-faint" title="${m.name} (미작성)" loading="lazy">`;
                     }
                 });
             }
@@ -1019,7 +1031,7 @@
         members.forEach(m => {
             const badge = document.createElement('div'); badge.className = 'member-badge';
             const avatar = m.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${m.name}`;
-            badge.innerHTML = `<img src="${avatar}">${m.name}`; listEl.appendChild(badge);
+            badge.innerHTML = `<img src="${avatar}" loading="lazy">${m.name}`; listEl.appendChild(badge);
         });
     }
 
@@ -1567,7 +1579,7 @@
             div.innerHTML = `
                 <div class="member-card-banner" style="background:linear-gradient(135deg,${c1},${c2});"></div>
                 <div class="member-card-body">
-                    <img src="${avatarUrl}" class="member-avatar">
+                    <img src="${avatarUrl}" class="member-avatar" loading="lazy">
                     <div class="member-name">${member.name}</div>
                     <div class="member-bio">${member.bio || ''}</div>
                     <div class="member-stats">
