@@ -1,6 +1,6 @@
 // =============================================================
-// 뼈갈단 V3 — Google Apps Script V32
-// saveTask: 중복 행 전부 삭제 후 새 행 추가 방식으로 변경
+// 뼈갈단 V3 — Google Apps Script V33
+// saveThanksLog: 감사일기 그룹 Thankslog 시트 연동 추가
 // =============================================================
 
 var COLS = {
@@ -11,6 +11,7 @@ var COLS = {
   GroupMembers:        ['groupName','name','avatar'],
   GroupPosts:          ['id','groupName','name','content','timestamp'],
   DietLogs:            ['date','name','groupName','content'],
+  Thankslog:           ['date','name','groupName','content'],
   Groups:              ['id','name','desc','emoji','creator'],
   DeletedDefaultGroups:['id']
 };
@@ -173,6 +174,7 @@ function doGet(e) {
       groupMembers:        safe('GroupMembers'),
       groupPosts:          safe('GroupPosts'),
       dietLogs:            safe('DietLogs'),
+      thanksLogs:          safe('Thankslog'),
       groups:              safe('Groups'),
       deletedDefaultGroups: safe('DeletedDefaultGroups')
     };
@@ -180,7 +182,7 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 
   } catch(err) {
-    var empty = { tasks:[], feeds:[], comments:[], taskLikes:[], taskComments:[], members:[], groupMembers:[], groupPosts:[], dietLogs:[], groups:[], deletedDefaultGroups:[], _error: String(err) };
+    var empty = { tasks:[], feeds:[], comments:[], taskLikes:[], taskComments:[], members:[], groupMembers:[], groupPosts:[], dietLogs:[], thanksLogs:[], groups:[], deletedDefaultGroups:[], _error: String(err) };
     return ContentService.createTextOutput(JSON.stringify(empty)).setMimeType(ContentService.MimeType.JSON);
   }
 }
@@ -249,6 +251,10 @@ function doPost(e) {
 
     } else if (p.action === 'saveDietLog') {
       upsert(ss, 'DietLogs', {date: p.date, name: p.name, groupName: p.groupName},
+        [p.date, p.name, p.groupName||'', p.content||'']);
+
+    } else if (p.action === 'saveThanksLog') {
+      upsert(ss, 'Thankslog', {date: p.date, name: p.name, groupName: p.groupName},
         [p.date, p.name, p.groupName||'', p.content||'']);
 
     } else if (p.action === 'saveTaskLike') {
