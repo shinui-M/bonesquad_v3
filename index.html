@@ -1491,7 +1491,6 @@
         });
         const sortedDates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a));
         const todayStr = new Date().toISOString().slice(0, 10);
-        const myName = document.getElementById('userName').value.trim();
 
         sortedDates.forEach(date => {
             const dateLogs = byDate[date];
@@ -1514,16 +1513,12 @@
                         <span class="diet-meal-val${val ? '' : ' empty'}">${val || '-'}</span>
                     </div>`;
                 }).join('');
-                const editBtn = log.name === myName
-                    ? `<button onclick="openThanksModal('${log.date}')" style="margin-top:8px; padding:4px 12px; font-size:0.8em; background:#f0f0f0; border:none; border-radius:6px; cursor:pointer; color:#555;">수정</button>`
-                    : '';
                 return `<div class="diet-person-card">
                     <div class="diet-person-name">
                         <div class="diet-avatar">${initial}</div>
                         ${log.name}
                     </div>
                     <div style="display:flex; flex-direction:column; gap:5px;">${thanksItems}</div>
-                    ${editBtn}
                 </div>`;
             }).join('');
 
