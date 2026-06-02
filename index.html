@@ -1508,10 +1508,10 @@
                 ];
                 const thanksItems = items.map(item => {
                     const val = c[item.key] && c[item.key].trim();
-                    return `<div class="diet-meal-item" style="display:flex; align-items:flex-start; gap:4px; background:#fafafa; border-radius:7px; padding:5px 8px;">
-                        <span class="diet-meal-icon">🙏</span>
-                        <span class="diet-meal-label">${item.label}</span>
-                        <span class="diet-meal-val${val ? '' : ' empty'}" style="white-space:normal; overflow:visible; text-overflow:unset; word-break:break-word;">${val || '-'}</span>
+                    return `<div style="display:flex; align-items:flex-start; gap:4px; background:#fafafa; border-radius:7px; padding:5px 8px;">
+                        <span class="diet-meal-icon" style="flex-shrink:0;">🙏</span>
+                        <span class="diet-meal-label" style="flex-shrink:0;">${item.label}</span>
+                        <span style="font-size:0.83em; color:${val ? '#333' : '#ccc'}; white-space:normal; word-break:break-word; overflow-wrap:break-word; flex:1; min-width:0;">${val || '-'}</span>
                     </div>`;
                 }).join('');
                 return `<div class="diet-person-card">
