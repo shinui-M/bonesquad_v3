@@ -1486,11 +1486,12 @@
 
         const byDate = {};
         logs.forEach(log => {
-            if (!byDate[log.date]) byDate[log.date] = [];
-            byDate[log.date].push(log);
+            const key = _normThanksDate(log.date);
+            if (!byDate[key]) byDate[key] = [];
+            byDate[key].push(log);
         });
         const sortedDates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a));
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayStr = _normThanksDate(new Date().toISOString().slice(0, 10));
 
         sortedDates.forEach(date => {
             const dateLogs = byDate[date];
