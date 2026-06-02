@@ -44,6 +44,13 @@ function readSheet(ss, name) {
   return out;
 }
 
+// "2026-06-02" / "2026-6-2" 혼용 방어 — date 컬럼 비교 시 양쪽 정규화
+function normDateStr(s) {
+  var p = s.split('-');
+  if (p.length === 3 && p[0].length === 4) return p[0] + '-' + +p[1] + '-' + +p[2];
+  return s;
+}
+
 function findRow(sheet, name, criteria) {
   var cols = COLS[name];
   var lr = sheet.getLastRow();
@@ -56,7 +63,10 @@ function findRow(sheet, name, criteria) {
     for (var ki = 0; ki < keys.length; ki++) {
       var k = keys[ki];
       var ci = cols.indexOf(k);
-      if (ci < 0 || cellStr(vals[i][ci]).trim() !== String(criteria[k]).trim()) { match = false; break; }
+      var stored = cellStr(vals[i][ci]).trim();
+      var crit   = String(criteria[k]).trim();
+      if (k === 'date') { stored = normDateStr(stored); crit = normDateStr(crit); }
+      if (ci < 0 || stored !== crit) { match = false; break; }
     }
     if (match) return i + 1;
   }
