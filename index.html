@@ -505,6 +505,35 @@
     </div>
 </div>
 
+<!-- 감사일기 모달 -->
+<div id="thanksModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>🙏 감사일기</span>
+            <span class="close-btn" onclick="document.getElementById('thanksModal').style.display='none'">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="diet-modal-field">
+                <label>📅 날짜</label>
+                <input type="date" id="inputThanksDate" onchange="checkExistingThanksLog()">
+            </div>
+            <div class="diet-modal-field">
+                <label>🙏 감사한 일 1</label>
+                <textarea id="thanksItem1" placeholder="오늘 감사한 일을 입력하세요"></textarea>
+            </div>
+            <div class="diet-modal-field">
+                <label>🙏 감사한 일 2</label>
+                <textarea id="thanksItem2" placeholder="오늘 감사한 일을 입력하세요"></textarea>
+            </div>
+            <div class="diet-modal-field">
+                <label>🙏 감사한 일 3</label>
+                <textarea id="thanksItem3" placeholder="오늘 감사한 일을 입력하세요"></textarea>
+            </div>
+            <button class="btn-submit" onclick="saveThanksLog()">기록 저장</button>
+        </div>
+    </div>
+</div>
+
 <!-- 성과 댓글 모달 -->
 <div id="taskCommentModal" class="modal">
     <div class="modal-content" id="taskCommentModalContent">
@@ -534,7 +563,8 @@
     // 기본 그룹 (삭제 불가)
     const DEFAULT_GROUPS = [
         { id: 'default_opic', name: '오픽 스터디', desc: '영어 말하기 뼈 깎는 연습', emoji: '🇺🇸', creator: '__system__' },
-        { id: 'default_diet', name: '뼈만 남는 다이어트', desc: '식단과 운동 인증', emoji: '🥗', creator: '__system__' }
+        { id: 'default_diet', name: '뼈만 남는 다이어트', desc: '식단과 운동 인증', emoji: '🥗', creator: '__system__' },
+        { id: 'default_thanks', name: '감사일기', desc: '오늘 감사한 일 3가지 기록', emoji: '🙏', creator: '__system__' }
     ];
 
     window.onload = function() {
@@ -568,6 +598,7 @@
         dbData.groupMembers = Array.isArray(data.groupMembers) ? data.groupMembers : dbData.groupMembers || [];
         dbData.groupPosts   = Array.isArray(data.groupPosts)   ? data.groupPosts   : dbData.groupPosts   || [];
         dbData.dietLogs     = Array.isArray(data.dietLogs)     ? data.dietLogs     : dbData.dietLogs     || [];
+        dbData.thanksLogs   = Array.isArray(data.thanksLogs)   ? data.thanksLogs   : dbData.thanksLogs   || [];
         dbData.groups       = Array.isArray(data.groups)       ? data.groups       : dbData.groups       || [];
         dbData.deletedDefaultGroups = Array.isArray(data.deletedDefaultGroups) ? data.deletedDefaultGroups : dbData.deletedDefaultGroups || [];
         dbData.taskLikes    = Array.isArray(data.taskLikes)    ? data.taskLikes    : dbData.taskLikes    || [];
@@ -1000,6 +1031,16 @@
                 <div class="schedule-summary" id="scheduleSummary"></div>
             `;
             renderScheduleGrid();
+        } else if (groupName === '감사일기') {
+            // 감사일기 그룹 → 감사 로그 UI
+            contentArea.innerHTML = `
+                <div class="diet-toolbar">
+                    <span style="font-size:0.9em; color:#888;">최신 기록 순으로 표시됩니다</span>
+                    <button class="btn-submit" style="width:auto; padding:8px 18px;" onclick="openThanksModal()">+ 기록 작성</button>
+                </div>
+                <div id="thanksLogList"></div>
+            `;
+            renderThanksLogs();
         } else {
             // 나머지 그룹 → 게시판 UI
             contentArea.innerHTML = `
@@ -1430,6 +1471,117 @@
             `;
             listEl.appendChild(group);
         });
+    }
+
+    function renderThanksLogs() {
+        const listEl = document.getElementById('thanksLogList');
+        if(!listEl) return;
+        listEl.innerHTML = '';
+        const logs = dbData.thanksLogs ? dbData.thanksLogs.filter(l => l.groupName === currentGroup) : [];
+
+        if (logs.length === 0) {
+            listEl.innerHTML = '<div class="diet-empty">아직 기록된 감사일기가 없어요.<br>+ 기록 작성으로 첫 번째 감사일기를 남겨보세요 🙏</div>';
+            return;
+        }
+
+        const byDate = {};
+        logs.forEach(log => {
+            if (!byDate[log.date]) byDate[log.date] = [];
+            byDate[log.date].push(log);
+        });
+        const sortedDates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a));
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        sortedDates.forEach(date => {
+            const dateLogs = byDate[date];
+            const isToday = date === todayStr;
+            const collapsed = !isToday;
+
+            const personCards = dateLogs.map(log => {
+                let c = {};
+                try { c = JSON.parse(log.content); } catch(e) {}
+                const initial = log.name.charAt(0);
+                const items = [
+                    { key: 'thanks1', label: '감사한 일 1' },
+                    { key: 'thanks2', label: '감사한 일 2' },
+                    { key: 'thanks3', label: '감사한 일 3' },
+                ];
+                const thanksItems = items.map(item => {
+                    const val = c[item.key] && c[item.key].trim();
+                    return `<div class="diet-meal-item">
+                        <span class="diet-meal-icon">🙏</span>
+                        <span class="diet-meal-label">${item.label}</span>
+                        <span class="diet-meal-val${val ? '' : ' empty'}">${val || '-'}</span>
+                    </div>`;
+                }).join('');
+                return `<div class="diet-person-card">
+                    <div class="diet-person-name">
+                        <div class="diet-avatar">${initial}</div>
+                        ${log.name}
+                    </div>
+                    <div class="diet-meals">${thanksItems}</div>
+                </div>`;
+            }).join('');
+
+            const group = document.createElement('div');
+            group.className = 'diet-date-group' + (collapsed ? ' collapsed' : '');
+            group.innerHTML = `
+                <div class="diet-date-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                    <span class="diet-date-title">🙏 ${formatDietDate(date)}${isToday ? ' <span style="font-size:0.75em;opacity:0.85;">오늘</span>' : ''}</span>
+                    <span class="diet-date-meta">
+                        <span class="diet-date-count">${dateLogs.length}명</span>
+                        <span class="diet-date-chevron">▼</span>
+                    </span>
+                </div>
+                <div class="diet-date-body">${personCards}</div>
+            `;
+            listEl.appendChild(group);
+        });
+    }
+
+    function openThanksModal() {
+        const name = document.getElementById('userName').value.trim();
+        const members = dbData.groupMembers.filter(m => m.groupName === currentGroup);
+        if(!members.some(m => m.name === name)) { alert("그룹에 참여해야 기록할 수 있습니다."); return; }
+        document.getElementById('inputThanksDate').valueAsDate = new Date();
+        checkExistingThanksLog();
+        document.getElementById('thanksModal').style.display = 'flex';
+    }
+
+    function checkExistingThanksLog() {
+        const name = document.getElementById('userName').value.trim();
+        const date = document.getElementById('inputThanksDate').value;
+        const log = dbData.thanksLogs.find(l => l.date === date && l.groupName === currentGroup && l.name === name);
+
+        if (log) {
+            let c = {}; try { c = JSON.parse(log.content); } catch(e) {}
+            document.getElementById('thanksItem1').value = c.thanks1 || '';
+            document.getElementById('thanksItem2').value = c.thanks2 || '';
+            document.getElementById('thanksItem3').value = c.thanks3 || '';
+        } else {
+            document.getElementById('thanksItem1').value = '';
+            document.getElementById('thanksItem2').value = '';
+            document.getElementById('thanksItem3').value = '';
+        }
+    }
+
+    function saveThanksLog() {
+        const name = document.getElementById('userName').value.trim();
+        const date = document.getElementById('inputThanksDate').value;
+        if(!date) { alert("날짜를 선택하세요."); return; }
+
+        const content = {
+            thanks1: document.getElementById('thanksItem1').value,
+            thanks2: document.getElementById('thanksItem2').value,
+            thanks3: document.getElementById('thanksItem3').value
+        };
+
+        const newData = { action: 'saveThanksLog', date: date, groupName: currentGroup, name: name, content: JSON.stringify(content) };
+        dbData.thanksLogs = dbData.thanksLogs.filter(l => !(l.date === date && l.groupName === currentGroup && l.name === name));
+        dbData.thanksLogs.push(newData);
+        renderThanksLogs();
+        document.getElementById('thanksModal').style.display = 'none';
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) });
     }
 
     function openDietModal() {
