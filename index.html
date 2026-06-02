@@ -518,15 +518,15 @@
                 <input type="date" id="inputThanksDate" onchange="checkExistingThanksLog()">
             </div>
             <div class="diet-modal-field">
-                <label>🙏 감사한 일 1</label>
+                <label>🙏 감사 1</label>
                 <textarea id="thanksItem1" placeholder="오늘 감사한 일을 입력하세요"></textarea>
             </div>
             <div class="diet-modal-field">
-                <label>🙏 감사한 일 2</label>
+                <label>🙏 감사 2</label>
                 <textarea id="thanksItem2" placeholder="오늘 감사한 일을 입력하세요"></textarea>
             </div>
             <div class="diet-modal-field">
-                <label>🙏 감사한 일 3</label>
+                <label>🙏 감사 3</label>
                 <textarea id="thanksItem3" placeholder="오늘 감사한 일을 입력하세요"></textarea>
             </div>
             <button class="btn-submit" onclick="saveThanksLog()">기록 저장</button>
@@ -1495,20 +1495,19 @@
         sortedDates.forEach(date => {
             const dateLogs = byDate[date];
             const isToday = date === todayStr;
-            const collapsed = !isToday;
 
             const personCards = dateLogs.map(log => {
                 let c = {};
                 try { c = JSON.parse(log.content); } catch(e) {}
                 const initial = log.name.charAt(0);
                 const items = [
-                    { key: 'thanks1', label: '감사한 일 1' },
-                    { key: 'thanks2', label: '감사한 일 2' },
-                    { key: 'thanks3', label: '감사한 일 3' },
+                    { key: 'thanks1', label: '감사 1' },
+                    { key: 'thanks2', label: '감사 2' },
+                    { key: 'thanks3', label: '감사 3' },
                 ];
                 const thanksItems = items.map(item => {
                     const val = c[item.key] && c[item.key].trim();
-                    return `<div class="diet-meal-item">
+                    return `<div class="diet-meal-item" style="display:flex; align-items:baseline; gap:4px; background:#fafafa; border-radius:7px; padding:5px 8px;">
                         <span class="diet-meal-icon">🙏</span>
                         <span class="diet-meal-label">${item.label}</span>
                         <span class="diet-meal-val${val ? '' : ' empty'}">${val || '-'}</span>
@@ -1519,18 +1518,17 @@
                         <div class="diet-avatar">${initial}</div>
                         ${log.name}
                     </div>
-                    <div class="diet-meals">${thanksItems}</div>
+                    <div style="display:flex; flex-direction:column; gap:5px;">${thanksItems}</div>
                 </div>`;
             }).join('');
 
             const group = document.createElement('div');
-            group.className = 'diet-date-group' + (collapsed ? ' collapsed' : '');
+            group.className = 'diet-date-group';
             group.innerHTML = `
-                <div class="diet-date-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <div class="diet-date-header">
                     <span class="diet-date-title">🙏 ${formatDietDate(date)}${isToday ? ' <span style="font-size:0.75em;opacity:0.85;">오늘</span>' : ''}</span>
                     <span class="diet-date-meta">
                         <span class="diet-date-count">${dateLogs.length}명</span>
-                        <span class="diet-date-chevron">▼</span>
                     </span>
                 </div>
                 <div class="diet-date-body">${personCards}</div>
