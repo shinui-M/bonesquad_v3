@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **단일 파일 구조**: 모든 HTML, CSS, JS가 `index.html` 하나에 포함됨. 이미지는 `images/` 폴더.
 
 - **프론트엔드**: Vanilla HTML/CSS/JS (프레임워크 없음)
-- **백엔드**: Google Apps Script — `SCRIPT_URL` 상수(index.html 7행)로 연결. 서버 코드는 별도 Google Apps Script 프로젝트에 있음 (이 저장소에 없음)
+- **백엔드**: Google Apps Script — `SCRIPT_URL` 상수(index.html 최상단)로 연결. 서버 코드는 `Code.gs`에 있음 (이 저장소에 포함)
 - **아바타**: DiceBear API (`https://api.dicebear.com/7.x/{style}/svg`)
 - **클라이언트 저장소**: LocalStorage
 
@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `SCRIPT_URL` 상수 (Google Apps Script 배포 URL) — 파일 최상단
 - `<style>` — 모든 CSS (반응형 포함)
-- `<body>` — HTML 마크업 (탭 4개, 모달 4개, 폼)
+- `<body>` — HTML 마크업 (탭 4개, 모달들, 폼)
 - `<script>` — 모든 JS
 
 ### JS 주요 섹션 (주석 구분자 기준)
@@ -29,6 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 오늘의 성과 (프로필 카드 그리드, `renderWeeklyCalendar`)
 - 주간 달력 모달 (`renderWeekGridModal`)
 - 그룹 기능 (`renderGroupList`, `enterGroup`)
+  - 감사일기 (`renderThanksLogs`)
   - 그룹 게시판 (`renderGroupPosts`)
   - 오픽 스터디 스케줄 선택기 (`renderScheduleGrid`)
   - 다이어트 로그 (`renderDietLogs`)
@@ -38,7 +39,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Data Flow
 
 ### 전역 상태
-- `dbData` — 서버에서 가져온 모든 데이터: `tasks`, `feeds`, `comments`, `members`, `groupMembers`, `groupPosts`, `dietLogs`, `groups`, `deletedDefaultGroups`
+- `dbData` — 서버에서 가져온 모든 데이터: `tasks`, `feeds`, `comments`, `members`, `groupMembers`, `groupPosts`, `dietLogs`, `thanksLogs`, `groups`, `deletedDefaultGroups`
 - `currentDate` — 성과 탭 표시 기준 날짜
 - `currentGroup` — 현재 진입한 그룹 이름 (null이면 목록 화면)
 - `selectedDateKey` — 성과 작성 모달에서 선택된 날짜
@@ -47,22 +48,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 서버 통신 패턴
 - **읽기**: `loadData()` → `GET SCRIPT_URL?action=getAllData` → `dbData = data`
 - **쓰기**: Optimistic update (프론트 즉시 반영) → `fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: '...', ...data }) })` fire-and-forget
-- POST action 종류: `saveTask`, `saveFeed`, `saveMember`, `saveComment`, `deleteFeed`, `editFeed`, `joinGroup`, `leaveGroup`, `saveGroupPost`, `editGroupPost`, `deleteGroupPost`, `saveDietLog`
+- POST action 종류: `saveTask`, `saveFeed`, `saveMember`, `saveComment`, `deleteFeed`, `editFeed`, `joinGroup`, `leaveGroup`, `saveGroupPost`, `editGroupPost`, `deleteGroupPost`, `saveDietLog`, `saveThanksLog`
 
-### 서버 (Google Apps Script) 구조
+### 서버 (Google Apps Script) 구조 — `Code.gs`
 - **`doGet(e)`**: 모든 시트 데이터를 JSON으로 반환
 - **`doPost(e)`**: `action` 필드로 분기하여 해당 시트에 행 추가/수정/삭제
-- **`updateOrAppendRow(sheet, criteria, newRowData, updateColIndex)`**: criteria 매칭 시 `updateColIndex`부터 끝까지 모든 컬럼 업데이트, 미매칭 시 appendRow
-- 시트 목록: Tasks, Feeds, Comments, Members, GroupMembers, GroupPosts, DietLogs
-- **SCRIPT_URL 변경 시**: 서버 코드 수정 후 새 배포하면 URL이 바뀜 → index.html 7행 SCRIPT_URL도 함께 업데이트 필요
+- **`upsert(ss, name, criteria, fullRow)`**: criteria 매칭 시 행 전체 업데이트, 미매칭 시 appendRow
+- 시트 목록: Tasks, Feeds, Comments, Members, GroupMembers, GroupPosts, DietLogs, Thankslog
+- **SCRIPT_URL 변경 시**: GAS에서 새 배포 생성하면 URL이 바뀜 → index.html 최상단 `SCRIPT_URL`도 함께 업데이트 필요
+- **GAS 코드 수정 후**: GAS 에디터에서 Code.gs 내용을 교체하고 새 버전으로 배포해야 반영됨
 
-### loadData() 흐름 (순서 중요)
-1. 서버 데이터 수신 → `dbData = data`
-2. `groups`, `deletedDefaultGroups`, `members` 초기화
-3. 멤버 중복 제거 (같은 이름이면 마지막 항목 유지)
-4. localStorage 프로필로 내 멤버 데이터 덮어쓰기
-5. 렌더링 (`renderWeeklyCalendar`, `renderFeed`, `renderMembers`, `renderGroupList`)
-6. 폼 필드 복원 (아바타 스타일/시드, bio)
+### loadData() / `_applyData()` 흐름 (순서 중요)
+1. 서버 데이터 수신 → `_applyData(data)` 호출
+2. 각 배열 안전 병합 (서버가 필드 누락해도 기존 데이터 보존)
+3. Tasks: 같은 date+name의 마지막 항목만 유지 (중복 방어)
+4. 멤버 중복 제거 (같은 이름이면 마지막 항목 유지)
+5. localStorage 프로필로 내 멤버 데이터 덮어쓰기
+6. 렌더링 (`renderWeeklyCalendar`, `renderFeed`, `renderMembers`, `renderGroupList`)
+7. 폼 필드 복원 (아바타 스타일/시드, bio)
 
 ### localStorage 키
 - `study_username` — 사용자 이름 (자동 저장/복원)
@@ -77,7 +80,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|---|
 | 오늘의 성과 | `renderWeeklyCalendar()` | `taskModal`(작성), `dayDetailModal`(보기), `weeklyCalendarModal` |
 | 뼈이스북 | `renderFeed()` | — |
-| 그룹 | `renderGroupList()`, `enterGroup()` | `dietModal` |
+| 그룹 | `renderGroupList()`, `enterGroup()` | `dietModal`, `thanksModal` |
 | 멤버 소개 | `renderMembers()` | — |
 
 ### 성과 탭 흐름
@@ -88,12 +91,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 별점: `renderStars(rating)` — CSS 오버레이로 소수점 단위 시각 표현
 
 ### 그룹 시스템
-- `DEFAULT_GROUPS` 배열(기본 그룹 2개: 오픽 스터디, 뼈만 남는 다이어트) → `getAllGroups()`로 합침
+- `DEFAULT_GROUPS` 배열(기본 그룹 3개: 감사일기, 오픽 스터디, 뼈만 남는 다이어트) → `getAllGroups()`로 합침
 - 그룹 만들기/삭제 기능은 없음 (기본 그룹만 사용)
-- `enterGroup()`에서 그룹 이름에 따라 3가지 UI 분기:
-  1. `'뼈만 남는 다이어트'` → 식단 로그 UI (`renderDietLogs`)
-  2. `'오픽 스터디'` → 주간 스케줄 선택기 UI (`renderScheduleGrid`)
-  3. 나머지 → 게시판 UI (`renderGroupPosts`)
+- `enterGroup()`에서 그룹 이름에 따라 4가지 UI 분기:
+  1. `'감사일기'` → 감사 로그 UI (`renderThanksLogs`) — Thankslog 시트 연동
+  2. `'뼈만 남는 다이어트'` → 식단 로그 UI (`renderDietLogs`) — DietLogs 시트 연동
+  3. `'오픽 스터디'` → 주간 스케줄 선택기 UI (`renderScheduleGrid`) — GroupPosts 시트에 JSON 저장
+  4. 나머지 → 게시판 UI (`renderGroupPosts`)
+
+### 감사일기
+- 매일 감사한 일 3가지(감사 1/2/3)를 기록
+- `thanksModal`로 작성, `renderThanksLogs()`로 표시
+- 저장 구조: `{ date, groupName, name, content }` — content는 `{ thanks1, thanks2, thanks3 }` JSON 문자열
+- 같은 날짜/이름/그룹의 기존 기록은 upsert로 덮어씀
 
 ### 오픽 스터디 스케줄 선택기
 - 주간 시간표 그리드 (월~일, 9:00~21:00, 1시간 단위)
@@ -113,6 +123,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `getAllGroups()`: `DEFAULT_GROUPS` + `dbData.groups`(사용자 생성, 현재 미사용) 합침
 - `getScheduleWeekStart(date)`: Date → 해당 주 월요일 dateKey 반환
 - `getScheduleWeekDates(weekStartKey)`: weekStart → 7일치 dateKey 배열 반환
+- `formatDietDate(dateStr)`: `"YYYY-MM-DD"` → 한국어 날짜 문자열 (감사일기/다이어트 로그 공용)
 
 ## Development & Deployment
 
@@ -129,3 +140,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 커밋 메시지는 한국어로 작성
 - 수정 완료 후 자동으로 git commit & push 수행 (사용자에게 확인 불필요)
 - 변경 전 `test.html`에서 먼저 테스트하고, 확인 후 `index.html`에 반영
+- 새 그룹 UI 추가 시: `DEFAULT_GROUPS` → `enterGroup()` 분기 → render함수 → open/save 함수 → modal HTML → `dbData` 초기화 → `_applyData()` 로딩 → GAS `COLS` + `doGet` + `doPost` 순으로 작업
