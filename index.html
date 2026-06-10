@@ -7,6 +7,7 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxUkCQ7ZoG3ox-ylWBMqu9Shtv9Pmgz8f8NqhFkP2pY17cuc41ZLWqm8j3s1THOjnE7KQ/exec";
         // =====================================================================
     </script>
+    <script>if (localStorage.getItem('bs_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
@@ -32,6 +33,13 @@
             --bg: #f3f5fa;
             --card: #ffffff;
             --line: #e8ebf2;
+            --panel: #f8f9fd;
+            --field: #fbfcfe;
+            --chip: #eef0f6;
+            --line-soft: #f2f4f9;
+            --line-strong: #d8dde9;
+            --star-empty: #e2e5ed;
+            color-scheme: light;
             --good: #2bc36b;
             --good-deep: #1ea158;
             --blue: #3b82f6;
@@ -91,7 +99,7 @@
         }
         .tab-link:hover { color: var(--brand); background: rgba(255,255,255,.6); }
         .tab-link:active { transform: scale(.97); }
-        .tab-link.active { color: var(--brand); background: #fff; border-bottom: none; box-shadow: 0 2px 10px rgba(23,28,38,.12); }
+        .tab-link.active { color: var(--brand); background: var(--card); border-bottom: none; box-shadow: 0 2px 10px rgba(23,28,38,.12); }
         .tab-content { display: none; animation: rise .4s var(--ease); }
         .tab-content.active { display: block; }
 
@@ -104,11 +112,11 @@
 
         input.name-input {
             width: 100%; padding: 13px; margin-bottom: 20px; border: 2px solid var(--line);
-            border-radius: 14px; background: #fbfcfe; color: var(--ink); text-align: center;
+            border-radius: 14px; background: var(--field); color: var(--ink); text-align: center;
             font-size: 1.05em; font-weight: 700; box-sizing: border-box;
             transition: border-color .2s, box-shadow .2s, background .2s;
         }
-        input.name-input:focus { outline: none; border-color: var(--brand); background: #fff; box-shadow: var(--ring); }
+        input.name-input:focus { outline: none; border-color: var(--brand); background: var(--card); box-shadow: var(--ring); }
         input.name-input::placeholder { color: var(--muted); font-weight: 500; }
 
         .btn-submit {
@@ -122,29 +130,29 @@
 
         textarea {
             width: 100%; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px;
-            box-sizing: border-box; font-family: inherit; resize: vertical; background: #fbfcfe;
+            box-sizing: border-box; font-family: inherit; resize: vertical; background: var(--field);
             transition: border-color .2s, box-shadow .2s, background .2s;
         }
         input[type="text"], input[type="number"], input[type="date"], input[type="file"] {
             width: 100%; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px;
-            box-sizing: border-box; margin-bottom: 10px; background: #fbfcfe; font-family: inherit;
+            box-sizing: border-box; margin-bottom: 10px; background: var(--field); font-family: inherit;
             transition: border-color .2s, box-shadow .2s, background .2s;
         }
         textarea:focus, input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus {
-            outline: none; border-color: var(--brand); background: #fff; box-shadow: var(--ring);
+            outline: none; border-color: var(--brand); background: var(--card); box-shadow: var(--ring);
         }
 
         /* 성과 탭 툴바 */
         .calendar-toolbar {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-            padding: 12px 16px; background: #f8f9fd; border-radius: 14px; border: 1px solid var(--line);
+            padding: 12px 16px; background: var(--panel); border-radius: 14px; border: 1px solid var(--line);
             flex-wrap: wrap; gap: 10px;
         }
         .calendar-toolbar-left { display: flex; align-items: center; gap: 8px; }
         .calendar-toolbar-center { display: flex; align-items: center; gap: 5px; font-size: 1.15em; font-weight: 800; color: var(--ink); letter-spacing: -.3px; }
         .calendar-toolbar-right { display: flex; align-items: center; gap: 8px; }
         .btn-toolbar {
-            background: #fff; border: 1px solid var(--line); padding: 9px 14px; border-radius: 10px;
+            background: var(--card); border: 1px solid var(--line); padding: 9px 14px; border-radius: 10px;
             cursor: pointer; font-size: .92em; font-weight: 700; color: var(--ink-soft); font-family: inherit;
             transition: all .2s var(--ease); display: flex; align-items: center; gap: 5px;
             box-shadow: 0 1px 2px rgba(23,28,38,.04);
@@ -168,12 +176,12 @@
             cursor: pointer; text-align: left; overflow: hidden;
             animation: rise .45s var(--ease) backwards;
         }
-        .submitter-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: #d8dde9; }
+        .submitter-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
         .submitter-card:active { transform: scale(.98); }
-        .submitter-card.me { border-color: rgba(240,69,92,.55); background: linear-gradient(160deg, #fff 30%, var(--brand-soft)); }
+        .submitter-card.me { border-color: rgba(240,69,92,.55); background: linear-gradient(160deg, var(--card) 30%, var(--brand-soft)); }
         .submitter-card.submitted { border-color: rgba(43,195,107,.55); }
-        .submitter-card.faint { opacity: .55; filter: grayscale(60%); background: #f7f8fb; border: 1.5px dashed #d3d8e3; box-shadow: none; }
-        .submitter-card .card-avatar { width: 42px; height: 42px; border-radius: 50%; background: #eef0f6; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--line); flex-shrink: 0; transition: transform .25s var(--ease); }
+        .submitter-card.faint { opacity: .55; filter: grayscale(60%); background: var(--panel); border: 1.5px dashed var(--line-strong); box-shadow: none; }
+        .submitter-card .card-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--chip); object-fit: cover; border: 2px solid var(--card); box-shadow: 0 0 0 1.5px var(--line); flex-shrink: 0; transition: transform .25s var(--ease); }
         .submitter-card:hover .card-avatar { transform: scale(1.08) rotate(-3deg); }
         .submitter-card .card-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; overflow: hidden; }
         .submitter-card .card-top-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
@@ -183,7 +191,7 @@
         .submitter-card .badge-none { background: #c8cdd9; color: #fff; }
         .submitter-card .rating-badge { font-size: .75em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rating-badge { font-weight: 700; font-size: .9em; }
-        .star-rating { position: relative; display: inline-block; color: #e2e5ed; white-space: nowrap; }
+        .star-rating { position: relative; display: inline-block; color: var(--star-empty); white-space: nowrap; }
         .star-rating .star-fill { position: absolute; left: 0; top: 0; overflow: hidden; color: var(--gold); white-space: nowrap; }
 
         /* 등장 모션 스태거 */
@@ -197,7 +205,7 @@
         /* 주간 달력 모달 */
         .week-grid-modal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
         .week-day-col {
-            text-align: center; min-height: 100px; background: #fbfcfe; border: 1.5px solid var(--line);
+            text-align: center; min-height: 100px; background: var(--field); border: 1.5px solid var(--line);
             border-radius: 12px; padding: 7px 4px; cursor: pointer;
             transition: transform .2s var(--ease), border-color .2s, background .2s, box-shadow .2s;
         }
@@ -209,7 +217,7 @@
         .week-day-label.sat { color: var(--blue); }
         .week-day-num { font-weight: 800; font-size: 1.1em; margin-bottom: 4px; }
         .week-day-avatars { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; }
-        .week-day-avatars img { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: #fff; }
+        .week-day-avatars img { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); }
         .week-day-avatars .avatar-faint { opacity: .3; filter: grayscale(100%); }
 
         /* 그룹 스타일 */
@@ -230,13 +238,13 @@
         #groupDetailView { display: none; }
         .group-header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 20px; }
         .btn-back {
-            background: #eef0f6; border: none; padding: 7px 16px; border-radius: 20px; cursor: pointer;
+            background: var(--chip); border: none; padding: 7px 16px; border-radius: 20px; cursor: pointer;
             margin-bottom: 12px; font-weight: 700; color: var(--ink-soft); font-family: inherit;
             transition: all .2s var(--ease);
         }
         .btn-back:hover { background: var(--brand-soft); color: var(--brand); transform: translateX(-2px); }
-        .group-members-area { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; background: #f8f9fd; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); }
-        .member-badge { display: flex; align-items: center; background: #fff; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); font-size: .88em; font-weight: 600; color: var(--ink-soft); box-shadow: 0 1px 2px rgba(23,28,38,.04); transition: transform .2s; }
+        .group-members-area { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; background: var(--panel); padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); }
+        .member-badge { display: flex; align-items: center; background: var(--card); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); font-size: .88em; font-weight: 600; color: var(--ink-soft); box-shadow: 0 1px 2px rgba(23,28,38,.04); transition: transform .2s; }
         .member-badge:hover { transform: translateY(-1px); }
         .member-badge img { width: 20px; height: 20px; border-radius: 50%; margin-right: 6px; }
         .btn-join { background: linear-gradient(135deg, #34d27b, var(--good-deep)); color: white; border: none; padding: 9px 18px; border-radius: 10px; cursor: pointer; margin-left: auto; font-weight: 700; font-family: inherit; box-shadow: 0 4px 12px rgba(43,195,107,.3); transition: transform .15s, filter .2s; }
@@ -245,16 +253,16 @@
         .btn-leave:hover { filter: brightness(.95); }
 
         /* 스케줄 선택기 */
-        .schedule-toolbar { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 16px; padding: 11px 15px; background: #f8f9fd; border-radius: 14px; border: 1px solid var(--line); flex-wrap: wrap; }
-        .schedule-toolbar .btn-toolbar { background: #fff; border: 1px solid var(--line); padding: 7px 12px; border-radius: 10px; cursor: pointer; font-size: .9em; font-weight: 700; }
+        .schedule-toolbar { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 16px; padding: 11px 15px; background: var(--panel); border-radius: 14px; border: 1px solid var(--line); flex-wrap: wrap; }
+        .schedule-toolbar .btn-toolbar { background: var(--card); border: 1px solid var(--line); padding: 7px 12px; border-radius: 10px; cursor: pointer; font-size: .9em; font-weight: 700; }
         .schedule-toolbar .btn-toolbar:hover { border-color: rgba(240,69,92,.45); color: var(--brand); }
         .schedule-table-wrap { overflow-x: auto; margin-bottom: 20px; -webkit-overflow-scrolling: touch; position: relative; border-radius: 12px; border: 1px solid var(--line); }
         .schedule-table { width: 100%; min-width: 500px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-        .schedule-table th { background: #f3f5fa; padding: 9px 4px; font-size: .85em; text-align: center; border: 1px solid var(--line); color: var(--ink-soft); }
-        .schedule-table th:first-child { position: sticky; left: 0; z-index: 3; background: #f3f5fa; border-right: 2px solid #d3d8e3; }
+        .schedule-table th { background: var(--panel); padding: 9px 4px; font-size: .85em; text-align: center; border: 1px solid var(--line); color: var(--ink-soft); }
+        .schedule-table th:first-child { position: sticky; left: 0; z-index: 3; background: var(--panel); border-right: 2px solid var(--line-strong); }
         .schedule-table th.today-col { background: var(--brand-soft); color: var(--brand); }
         .schedule-table td { padding: 0; text-align: center; border: 1px solid #eef0f6; cursor: pointer; vertical-align: middle; height: 36px; transition: background .15s; font-size: .8em; position: relative; }
-        .schedule-table td:first-child { cursor: default; background: #fafbfd; font-weight: 700; font-size: .8em; color: var(--ink-soft); width: 52px; min-width: 52px; max-width: 52px; position: sticky; left: 0; z-index: 2; border-right: 2px solid #d3d8e3; }
+        .schedule-table td:first-child { cursor: default; background: var(--panel); font-weight: 700; font-size: .8em; color: var(--ink-soft); width: 52px; min-width: 52px; max-width: 52px; position: sticky; left: 0; z-index: 2; border-right: 2px solid var(--line-strong); }
         .schedule-table td:hover:not(:first-child) { outline: 2px solid var(--brand); outline-offset: -2px; z-index: 1; }
         .schedule-table td.my-selected { outline: 2px solid var(--brand); outline-offset: -2px; z-index: 1; }
         .schedule-cell { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; min-height: 36px; }
@@ -268,9 +276,9 @@
         .schedule-heat-3 { background: #4fc888; }
         .schedule-heat-4 { background: #25a861; }
         .schedule-heat-5 { background: #178249; }
-        .schedule-summary { background: #f8f9fd; padding: 16px; border-radius: 14px; border: 1px solid var(--line); }
+        .schedule-summary { background: var(--panel); padding: 16px; border-radius: 14px; border: 1px solid var(--line); }
         .schedule-summary h4 { margin: 0 0 10px 0; color: var(--ink); font-size: 1em; }
-        .schedule-best-slot { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px; background: #fff; border-radius: 10px; margin-bottom: 6px; border: 1px solid var(--line); font-size: .9em; transition: transform .2s, box-shadow .2s; }
+        .schedule-best-slot { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px; background: var(--card); border-radius: 10px; margin-bottom: 6px; border: 1px solid var(--line); font-size: .9em; transition: transform .2s, box-shadow .2s; }
         .schedule-best-slot:hover { transform: translateX(3px); box-shadow: var(--shadow-sm); }
         .schedule-best-slot .slot-time { font-weight: 700; color: var(--ink); }
         .schedule-best-slot .slot-count { color: var(--blue); font-weight: 700; }
@@ -297,16 +305,16 @@
         .diet-date-count { background: rgba(255,255,255,.25); color: #fff; font-size: .8em; padding: 2px 10px; border-radius: 20px; font-weight: 600; }
         .diet-date-chevron { color: rgba(255,255,255,.85); font-size: .8em; transition: transform .25s var(--ease); }
         .diet-date-group.collapsed .diet-date-chevron { transform: rotate(-90deg); }
-        .diet-date-body { background: #fff; }
+        .diet-date-body { background: var(--card); }
         .diet-date-group.collapsed .diet-date-body { display: none; }
         /* 멤버별 카드 */
-        .diet-person-card { padding: 12px 16px; border-bottom: 1px solid #f2f4f9; }
+        .diet-person-card { padding: 12px 16px; border-bottom: 1px solid var(--line-soft); }
         .diet-person-card:last-child { border-bottom: none; }
         .diet-person-name { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); margin-bottom: 9px; font-size: .92em; }
         .diet-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #34d27b, var(--good-deep)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75em; font-weight: 700; flex-shrink: 0; }
         .diet-meals { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
-        .diet-meal-item { display: flex; align-items: baseline; gap: 4px; background: #f8f9fd; border-radius: 8px; padding: 6px 9px; min-width: 0; transition: background .2s; }
-        .diet-meal-item:hover { background: #f0f2f8; }
+        .diet-meal-item { display: flex; align-items: baseline; gap: 4px; background: var(--panel); border-radius: 8px; padding: 6px 9px; min-width: 0; transition: background .2s; }
+        .diet-meal-item:hover { background: var(--chip); }
         .diet-meal-icon { font-size: .82em; flex-shrink: 0; }
         .diet-meal-label { font-size: .73em; color: var(--muted); font-weight: 600; flex-shrink: 0; }
         .diet-meal-val { font-size: .83em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -316,21 +324,21 @@
         /* 모달 폼 필드 */
         .diet-modal-field { margin-bottom: 14px; }
         .diet-modal-field label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; font-size: .92em; }
-        .diet-modal-field input, .diet-modal-field textarea { width: 100%; padding: 10px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: .93em; box-sizing: border-box; background: #fbfcfe; transition: border-color .2s, box-shadow .2s, background .2s; font-family: inherit; }
-        .diet-modal-field input:focus, .diet-modal-field textarea:focus { outline: none; border-color: var(--good); background: #fff; box-shadow: 0 0 0 3px rgba(43,195,107,.15); }
+        .diet-modal-field input, .diet-modal-field textarea { width: 100%; padding: 10px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: .93em; box-sizing: border-box; background: var(--field); transition: border-color .2s, box-shadow .2s, background .2s; font-family: inherit; }
+        .diet-modal-field input:focus, .diet-modal-field textarea:focus { outline: none; border-color: var(--good); background: var(--card); box-shadow: 0 0 0 3px rgba(43,195,107,.15); }
         .diet-modal-field textarea { height: 70px; resize: vertical; }
 
         /* 수정/삭제 버튼 */
-        .btn-edit { color: var(--blue); border: 1px solid var(--line); background: #fff; padding: 3px 10px; border-radius: 8px; font-size: .8em; cursor: pointer; margin-left: 5px; font-family: inherit; transition: all .2s; }
+        .btn-edit { color: var(--blue); border: 1px solid var(--line); background: var(--card); padding: 3px 10px; border-radius: 8px; font-size: .8em; cursor: pointer; margin-left: 5px; font-family: inherit; transition: all .2s; }
         .btn-edit:hover { background: #eff6ff; border-color: rgba(59,130,246,.4); }
-        .btn-delete { color: var(--brand); border: 1px solid var(--line); background: #fff; padding: 3px 10px; border-radius: 8px; font-size: .8em; cursor: pointer; margin-left: 5px; font-family: inherit; transition: all .2s; }
+        .btn-delete { color: var(--brand); border: 1px solid var(--line); background: var(--card); padding: 3px 10px; border-radius: 8px; font-size: .8em; cursor: pointer; margin-left: 5px; font-family: inherit; transition: all .2s; }
         .btn-delete:hover { background: var(--brand-soft); border-color: rgba(240,69,92,.4); }
 
-        .input-group { margin-bottom: 15px; border: 1px solid var(--line); padding: 16px; border-radius: 14px; background: #f8f9fd; }
+        .input-group { margin-bottom: 15px; border: 1px solid var(--line); padding: 16px; border-radius: 14px; background: var(--panel); }
         .input-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
-        .type-select { padding: 9px 8px; border: 1.5px solid var(--line); border-radius: 10px; width: 80px; flex-shrink: 0; margin-top: 2px; background: #fff; font-family: inherit; transition: border-color .2s; }
+        .type-select { padding: 9px 8px; border: 1.5px solid var(--line); border-radius: 10px; width: 80px; flex-shrink: 0; margin-top: 2px; background: var(--card); font-family: inherit; transition: border-color .2s; }
         .type-select:focus { outline: none; border-color: var(--brand); }
-        .content-input { flex-grow: 1; padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 10px; resize: none; overflow: hidden; min-height: 36px; line-height: 1.5; font-family: inherit; font-size: 1em; box-sizing: border-box; background: #fff; transition: border-color .2s, box-shadow .2s; }
+        .content-input { flex-grow: 1; padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 10px; resize: none; overflow: hidden; min-height: 36px; line-height: 1.5; font-family: inherit; font-size: 1em; box-sizing: border-box; background: var(--card); transition: border-color .2s, box-shadow .2s; }
         .content-input:focus { outline: none; border-color: var(--brand); box-shadow: var(--ring); }
         .star-slider-wrap { display: flex; flex-direction: column; gap: 8px; }
         .star-slider-wrap input[type="range"] { width: 100%; accent-color: var(--gold); height: 6px; cursor: pointer; }
@@ -343,13 +351,13 @@
         /* 모달 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18,22,32,.5); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); justify-content: center; align-items: center; z-index: 1000; animation: fadeIn .2s; }
         @keyframes modalIn { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
-        .modal-content { background: #fff; padding: 25px; border-radius: 20px; width: 600px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(18,22,32,.3); animation: modalIn .32s var(--ease); }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 600px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(18,22,32,.3); animation: modalIn .32s var(--ease); }
         .modal-content.wide { width: 750px; }
         .modal-header { color: var(--brand); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2em; font-weight: 800; letter-spacing: -.3px; }
         .modal-body { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
 
         /* 상세 보기 카드 */
-        .detail-card { background: #f8f9fd; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #c8cdd9; }
+        .detail-card { background: var(--panel); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #c8cdd9; }
         .detail-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 700; }
         .detail-item { display: flex; margin-bottom: 5px; font-size: .95em; }
         .detail-type { font-weight: 700; color: #fff; padding: 2px 6px; border-radius: 6px; font-size: .8em; margin-right: 8px; min-width: 40px; text-align: center; }
@@ -359,32 +367,32 @@
         .feed-list { list-style: none; padding: 0; }
         .feed-item { background: var(--card); padding: 20px; margin-bottom: 18px; border-radius: 16px; border: 1px solid var(--line); box-shadow: var(--shadow-sm); transition: box-shadow .25s var(--ease), transform .25s var(--ease); animation: rise .45s var(--ease) backwards; }
         .feed-item:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-        .feed-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f2f4f9; padding-bottom: 10px; }
+        .feed-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid var(--line-soft); padding-bottom: 10px; }
         .feed-img { max-width: 100%; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--line); }
-        .comment-section { background: #f8f9fd; padding: 15px; border-radius: 12px; margin-top: 15px; border-top: none; }
+        .comment-section { background: var(--panel); padding: 15px; border-radius: 12px; margin-top: 15px; border-top: none; }
         .comment-list { list-style: none; padding: 0; margin-bottom: 10px; }
-        .comment-item { background: #fff; padding: 9px 12px; margin-bottom: 5px; border-radius: 10px; font-size: .85em; border: 1px solid var(--line); display: flex; gap: 8px; }
+        .comment-item { background: var(--card); padding: 9px 12px; margin-bottom: 5px; border-radius: 10px; font-size: .85em; border: 1px solid var(--line); display: flex; gap: 8px; }
         .comment-author { color: var(--brand); font-weight: 700; white-space: nowrap; }
         .comment-content { color: var(--ink-soft); word-break: break-all; }
 
         /* 멤버 소개 */
         .avatar-preview-container { display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; max-width: 460px; }
-        .avatar-preview { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; background: #eef0f6; border: 3px solid #fff; box-shadow: 0 0 0 2px var(--line), var(--shadow-sm); margin: 0 auto 14px; display: block; transition: transform .3s var(--ease); }
+        .avatar-preview { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; background: var(--chip); border: 3px solid var(--card); box-shadow: 0 0 0 2px var(--line), var(--shadow-sm); margin: 0 auto 14px; display: block; transition: transform .3s var(--ease); }
         .avatar-preview:hover { transform: scale(1.06) rotate(3deg); }
-        .avatar-mode-btn { padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; font-size: .85em; font-weight: 600; color: var(--ink-soft); font-family: inherit; transition: all .2s var(--ease); }
+        .avatar-mode-btn { padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); cursor: pointer; font-size: .85em; font-weight: 600; color: var(--ink-soft); font-family: inherit; transition: all .2s var(--ease); }
         .avatar-mode-btn:hover { border-color: rgba(240,69,92,.4); color: var(--brand); }
         .avatar-mode-btn.active { background: var(--brand-grad); color: #fff; border-color: transparent; box-shadow: var(--shadow-brand); }
-        .member-form { background: #f8f9fd; padding: 24px 20px; border-radius: 18px; margin-bottom: 30px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; }
+        .member-form { background: var(--panel); padding: 24px 20px; border-radius: 18px; margin-bottom: 30px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; }
         .member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-        .member-card { background: white; border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--line); transition: transform .25s var(--ease), box-shadow .25s var(--ease); animation: rise .45s var(--ease) backwards; }
+        .member-card { background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--line); transition: transform .25s var(--ease), box-shadow .25s var(--ease); animation: rise .45s var(--ease) backwards; }
         .member-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
         .member-card-banner { height: 52px; }
         .member-card-body { padding: 6px 14px 14px; text-align: center; }
-        .member-avatar { width: 68px; height: 68px; border-radius: 50%; margin-top: -34px; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(23,28,38,.18); display: block; margin-left: auto; margin-right: auto; object-fit: cover; background: #eef0f6; transition: transform .25s var(--ease); }
+        .member-avatar { width: 68px; height: 68px; border-radius: 50%; margin-top: -34px; border: 3px solid var(--card); box-shadow: 0 2px 10px rgba(23,28,38,.18); display: block; margin-left: auto; margin-right: auto; object-fit: cover; background: var(--chip); transition: transform .25s var(--ease); }
         .member-card:hover .member-avatar { transform: scale(1.1); }
         .member-name { font-weight: 800; font-size: 1.05em; color: var(--ink); margin: 7px 0 5px; letter-spacing: -.3px; }
         .member-bio { font-size: .82em; color: var(--ink-soft); word-break: keep-all; line-height: 1.5; margin-bottom: 10px; min-height: 2.4em; }
-        .member-stats { display: flex; justify-content: center; gap: 18px; font-size: .72em; color: var(--muted); padding-top: 8px; border-top: 1px solid #f2f4f9; }
+        .member-stats { display: flex; justify-content: center; gap: 18px; font-size: .72em; color: var(--muted); padding-top: 8px; border-top: 1px solid var(--line-soft); }
         .member-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
         .member-stat-val { font-weight: 800; font-size: 1.2em; color: var(--ink); }
 
@@ -399,10 +407,10 @@
         .detail-section-title { font-size: .82em; font-weight: 700; color: var(--muted); padding: 10px 0 6px; border-bottom: 1px solid var(--line); margin-bottom: 10px; letter-spacing: .03em; }
         .detail-submitted-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
         .detail-unsub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .day-detail-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 13px; box-shadow: var(--shadow-sm); transition: box-shadow .2s var(--ease), transform .2s var(--ease); animation: rise .4s var(--ease) backwards; }
+        .day-detail-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 13px; box-shadow: var(--shadow-sm); transition: box-shadow .2s var(--ease), transform .2s var(--ease); animation: rise .4s var(--ease) backwards; }
         .day-detail-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
         .day-detail-profile { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
-        .day-detail-profile img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--line); object-fit: cover; background: #eef0f6; flex-shrink: 0; }
+        .day-detail-profile img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--card); box-shadow: 0 0 0 1.5px var(--line); object-fit: cover; background: var(--chip); flex-shrink: 0; }
         .day-detail-profile .profile-info { flex: 1; min-width: 0; }
         .day-detail-profile .profile-name { font-weight: 700; font-size: .92em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .day-detail-profile .profile-rating { font-size: .8em; margin-top: 2px; }
@@ -410,7 +418,7 @@
         .day-detail-item { display: flex; flex-direction: column; gap: 3px; font-size: .83em; }
         .day-detail-tag { font-weight: 700; color: #fff; padding: 2px 9px; border-radius: 20px; font-size: .75em; display: inline-block; align-self: flex-start; }
         .day-detail-content { color: var(--ink-soft); line-height: 1.5; word-break: break-all; padding-left: 2px; }
-        .detail-mini-card { background: #f8f9fd; border: 1.5px dashed #d3d8e3; border-radius: 12px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; opacity: .6; }
+        .detail-mini-card { background: var(--panel); border: 1.5px dashed var(--line-strong); border-radius: 12px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; opacity: .6; }
         .detail-mini-card img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; filter: grayscale(40%); }
         .detail-mini-name { font-size: .82em; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
         .btn-write-from-detail { display: block; width: 100%; padding: 14px; background: var(--brand-grad); color: #fff; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 1em; font-family: inherit; margin-top: 18px; transition: transform .15s, filter .2s; box-shadow: var(--shadow-brand); }
@@ -419,7 +427,7 @@
 
         /* 카드 액션 버튼 행 (불 이모지 + 댓글) */
         .card-actions-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-        .btn-fire, .btn-comment { border: 1px solid var(--line); border-radius: 20px; padding: 5px 13px; background: #f8f9fd; cursor: pointer; font-size: .9em; font-family: inherit; transition: background .2s, border-color .2s, transform .15s; }
+        .btn-fire, .btn-comment { border: 1px solid var(--line); border-radius: 20px; padding: 5px 13px; background: var(--panel); cursor: pointer; font-size: .9em; font-family: inherit; transition: background .2s, border-color .2s, transform .15s; }
         .btn-fire:hover { background: #ffe9eb; border-color: rgba(240,69,92,.3); transform: translateY(-1px); }
         .btn-fire:active, .btn-comment:active { transform: scale(.92); }
         .btn-fire.active { background: #ffe0e4; border-color: #f7a3af; animation: pop .35s var(--ease); }
@@ -428,7 +436,7 @@
         /* 성과 댓글 모달 */
         #taskCommentModal .modal-content { max-width: 500px; }
         .task-comment-list { list-style: none; padding: 0; margin: 0 0 16px 0; max-height: 300px; overflow-y: auto; }
-        .task-comment-item { padding: 10px 12px; border-bottom: 1px solid #f2f4f9; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        .task-comment-item { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
         .task-comment-item:last-child { border-bottom: none; }
         .task-comment-body { flex: 1; }
         .task-comment-author { font-weight: 700; color: var(--brand); margin-right: 6px; font-size: .9em; }
@@ -445,11 +453,73 @@
             *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
         }
 
+        /* ===== 다크 모드 토글 버튼 ===== */
+        .theme-toggle {
+            position: fixed; right: 18px; bottom: 18px; z-index: 900;
+            width: 52px; height: 52px; border-radius: 50%;
+            border: 1px solid var(--line); background: var(--card); color: var(--ink);
+            box-shadow: var(--shadow-md); cursor: pointer; font-size: 1.35em;
+            display: flex; align-items: center; justify-content: center; padding: 0;
+            transition: transform .2s var(--ease), box-shadow .2s, background .3s, border-color .3s;
+        }
+        .theme-toggle:hover { transform: translateY(-2px) rotate(15deg); }
+        .theme-toggle:active { transform: scale(.88); }
+
+        /* ===== 다크 모드 ===== */
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --ink: #e7eaf2;
+            --ink-soft: #aab1c0;
+            --muted: #7c8496;
+            --bg: #0f1218;
+            --card: #181c26;
+            --line: #272d3b;
+            --panel: #1d2230;
+            --field: #141822;
+            --chip: #232938;
+            --line-soft: #222837;
+            --line-strong: #39415a;
+            --star-empty: #3a4254;
+            --brand-soft: rgba(240,69,92,.14);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,.35), 0 4px 14px rgba(0,0,0,.3);
+            --shadow-md: 0 8px 28px rgba(0,0,0,.5);
+            --shadow-brand: 0 6px 18px rgba(240,69,92,.25);
+            --ring: 0 0 0 3px rgba(240,69,92,.28);
+        }
+        [data-theme="dark"] body {
+            background-image: radial-gradient(900px 420px at 85% -10%, rgba(240,69,92,.09), transparent 60%),
+                              radial-gradient(700px 380px at 0% 0%, rgba(59,130,246,.06), transparent 55%);
+        }
+        [data-theme="dark"] .container { border-color: var(--line); }
+        [data-theme="dark"] .tabs { background: rgba(22,26,35,.92); box-shadow: inset 0 1px 2px rgba(0,0,0,.35); }
+        [data-theme="dark"] .tab-link:hover { background: rgba(255,255,255,.05); }
+        [data-theme="dark"] .tab-link.active { background: var(--chip); box-shadow: 0 2px 10px rgba(0,0,0,.45); }
+        [data-theme="dark"] .loading-overlay { background: rgba(15,18,24,.85); }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #323a4c; border-color: var(--bg); }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #404a60; }
+        [data-theme="dark"] .group-img { background: linear-gradient(135deg, #1d2230, #232938); color: #4a5268; }
+        [data-theme="dark"] .week-day-col.selected { background: rgba(59,130,246,.16); }
+        [data-theme="dark"] .btn-edit:hover { background: rgba(59,130,246,.16); }
+        [data-theme="dark"] .btn-comment:hover { background: rgba(59,130,246,.16); }
+        [data-theme="dark"] .btn-fire:hover { background: rgba(240,69,92,.16); }
+        [data-theme="dark"] .btn-fire.active { background: rgba(240,69,92,.24); border-color: rgba(240,69,92,.5); }
+        [data-theme="dark"] .diet-exercise-item { background: rgba(43,195,107,.14); }
+        [data-theme="dark"] .schedule-heat-1 { background: rgba(43,195,107,.16); }
+        [data-theme="dark"] .schedule-heat-2 { background: rgba(43,195,107,.38); }
+        [data-theme="dark"] .modal { background: rgba(0,0,0,.62); }
+        [data-theme="dark"] .modal-content { box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+        [data-theme="dark"] select { background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; }
+        [data-theme="dark"] .btn-add { background: var(--chip); }
+        [data-theme="dark"] .btn-add:hover { background: #2c3344; }
+        [data-theme="dark"] .schedule-cell-tooltip { background: #0c0e14; }
+        [data-theme="dark"] .schedule-cell-tooltip::after { border-top-color: #0c0e14; }
+
         /* 모바일 최적화 */
         @media (max-width: 768px) {
             .container { padding: 15px; margin: 10px; border-radius: 18px; }
             h2 { font-size: 1.5em; }
             .tabs { top: 6px; gap: 2px; padding: 4px; }
+            .theme-toggle { width: 46px; height: 46px; right: 14px; bottom: 14px; font-size: 1.2em; }
             .tab-link { padding: 11px 2px; font-size: .82em; min-width: auto; white-space: nowrap; }
             .calendar-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
             .calendar-toolbar-left, .calendar-toolbar-center, .calendar-toolbar-right { justify-content: center; }
@@ -468,8 +538,10 @@
 
 <div id="loadingMsg" class="loading-overlay">
     <div class="loading-spinner"></div>
-    <div style="color:#e74c3c; font-weight:bold; font-size:1.2em;">데이터 불러오는 중...</div>
+    <div style="color:var(--brand); font-weight:bold; font-size:1.2em;">데이터 불러오는 중...</div>
 </div>
+
+<button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="다크 모드">🌙</button>
 
 <div class="container">
     <input type="text" id="userName" class="name-input" placeholder="이름을 입력하세요 (필수)">
@@ -506,7 +578,7 @@
         <h2>뼈이스북</h2>
         <div style="margin-bottom:20px;">
             <textarea id="inputFeed" class="feed-input" placeholder="자유롭게 글을 남겨보세요..."></textarea>
-            <input type="text" id="inputFeedImg" placeholder="[선택] 사진 이미지 주소(URL)를 붙여넣으세요" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box; margin-bottom:10px;">
+            <input type="text" id="inputFeedImg" placeholder="[선택] 사진 이미지 주소(URL)를 붙여넣으세요" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box; margin-bottom:10px;">
             <button class="btn-submit" onclick="saveFeed()">게시하기</button>
         </div>
         <ul id="feedList" class="feed-list"></ul>
@@ -524,7 +596,7 @@
             <div class="group-header">
                 <h2 id="detailGroupTitle">그룹 이름</h2>
                 <div class="group-members-area">
-                    <span style="font-weight:bold; color:#666; margin-right:10px;">멤버:</span>
+                    <span style="font-weight:bold; color:var(--ink-soft); margin-right:10px;">멤버:</span>
                     <div id="groupMemberList" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
                     <button id="btnGroupAction" class="btn-join" onclick="toggleGroupJoin()">참여</button>
                 </div>
@@ -562,22 +634,22 @@
                     </div>
                 </div>
                 <div id="avatarCustomSection" style="display:none; width:100%;">
-                    <input type="text" id="customAvatarUrl" placeholder="이미지 URL을 붙여넣기..." oninput="previewCustomAvatar()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; margin-bottom:8px;">
-                    <div style="font-size:0.8em; color:#888; line-height:1.5;">
+                    <input type="text" id="customAvatarUrl" placeholder="이미지 URL을 붙여넣기..." oninput="previewCustomAvatar()" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:4px; box-sizing:border-box; margin-bottom:8px;">
+                    <div style="font-size:0.8em; color:var(--muted); line-height:1.5;">
                         <b>이미지 URL 얻는 법:</b><br>
                         1. 웹에서 원하는 이미지를 <b>우클릭 → 이미지 주소 복사</b><br>
                         2. 또는 아래 사이트에서 바로 URL 생성:<br>
-                        <a href="https://robohash.org/" target="_blank" style="color:#e74c3c;">RoboHash</a> - 주소창에 <span style="color:#333;">robohash.org/<b>내이름</b></span> 입력 → 주소 복사<br>
-                        <a href="https://www.dicebear.com/playground/" target="_blank" style="color:#e74c3c;">DiceBear Playground</a> - 스타일/옵션 선택 후 URL 복사<br>
-                        <span style="color:#aaa;">아무 이미지 URL 사용 가능 (프로필 사진, 캐릭터 등)</span>
+                        <a href="https://robohash.org/" target="_blank" style="color:var(--brand);">RoboHash</a> - 주소창에 <span style="color:var(--ink);">robohash.org/<b>내이름</b></span> 입력 → 주소 복사<br>
+                        <a href="https://www.dicebear.com/playground/" target="_blank" style="color:var(--brand);">DiceBear Playground</a> - 스타일/옵션 선택 후 URL 복사<br>
+                        <span style="color:var(--muted);">아무 이미지 URL 사용 가능 (프로필 사진, 캐릭터 등)</span>
                     </div>
                 </div>
             </div>
             <textarea id="inputBio" placeholder="자기소개..."></textarea>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; width:100%;">
                 <label for="inputBannerColor" style="font-weight:bold; font-size:0.92em; white-space:nowrap;">카드 색상</label>
-                <input type="color" id="inputBannerColor" value="#e74c3c" style="width:48px; height:36px; border:1px solid #ddd; border-radius:6px; cursor:pointer; padding:2px;">
-                <span style="font-size:0.8em; color:#999;">배너 그라디언트 기준 색상</span>
+                <input type="color" id="inputBannerColor" value="#e74c3c" style="width:48px; height:36px; border:1px solid var(--line); border-radius:6px; cursor:pointer; padding:2px;">
+                <span style="font-size:0.8em; color:var(--muted);">배너 그라디언트 기준 색상</span>
             </div>
             <button class="btn-submit" onclick="saveMember()">프로필 저장하기</button>
         </div>
@@ -737,6 +809,23 @@
         { id: 'default_diet', name: '뼈만 남는 다이어트', desc: '식단과 운동 인증', emoji: '🥗', creator: '__system__' }
     ];
 
+    // ==================== 다크 모드 ====================
+    function toggleTheme() {
+        const root = document.documentElement;
+        const toDark = root.getAttribute('data-theme') !== 'dark';
+        if (toDark) root.setAttribute('data-theme', 'dark');
+        else root.removeAttribute('data-theme');
+        localStorage.setItem('bs_theme', toDark ? 'dark' : 'light');
+        _syncThemeUI();
+    }
+    function _syncThemeUI() {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const btn = document.getElementById('themeToggle');
+        if (btn) { btn.textContent = dark ? '\u2600\uFE0F' : '\uD83C\uDF19'; btn.title = dark ? '라이트 모드' : '다크 모드'; }
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = dark ? '#0f1218' : '#e74c3c';
+    }
+
     window.onload = function() {
         const savedName = localStorage.getItem('study_username');
         if(savedName) {
@@ -746,6 +835,7 @@
             currentAvatarSeed = "bone";
         }
         updateAvatarPreview();
+        _syncThemeUI();
         addTaskItem();
         loadData();
     };
@@ -949,7 +1039,7 @@
         const unsubmitted = dbData.members ? dbData.members.filter(m => !submittedNames.has(m.name) && !isBeforeFirstTask(m.name, date)) : [];
 
         if (todaysTasks.length === 0 && unsubmitted.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#999; padding:30px;">기록이 없습니다.</div>';
+            container.innerHTML = '<div style="text-align:center; color:var(--muted); padding:30px;">기록이 없습니다.</div>';
             document.getElementById('dayDetailModal').style.display = 'flex';
             return;
         }
@@ -1168,7 +1258,7 @@
             // 다이어트 그룹은 기존 식단 로그 UI 유지
             contentArea.innerHTML = `
                 <div class="diet-toolbar">
-                    <span style="font-size:0.9em; color:#888;">최신 기록 순으로 표시됩니다</span>
+                    <span style="font-size:0.9em; color:var(--muted);">최신 기록 순으로 표시됩니다</span>
                     <button class="btn-submit" style="width:auto; padding:8px 18px;" onclick="openDietModal()">+ 기록 작성</button>
                 </div>
                 <div id="dietLogList"></div>
@@ -1192,7 +1282,7 @@
                     <div class="schedule-legend-box schedule-heat-5"></div>
                     <span>많음</span>
                     &nbsp;
-                    <div class="schedule-legend-box" style="background:#eee; outline:2px solid #e74c3c; outline-offset:-2px;"></div>
+                    <div class="schedule-legend-box" style="background:var(--chip); outline:2px solid #e74c3c; outline-offset:-2px;"></div>
                     <span>내 선택</span>
                 </div>
                 <div class="schedule-table-wrap">
@@ -1205,7 +1295,7 @@
             // 감사일기 그룹 → 감사 로그 UI
             contentArea.innerHTML = `
                 <div class="diet-toolbar">
-                    <span style="font-size:0.9em; color:#888;">최신 기록 순으로 표시됩니다</span>
+                    <span style="font-size:0.9em; color:var(--muted);">최신 기록 순으로 표시됩니다</span>
                     <button class="btn-submit" style="width:auto; padding:8px 18px;" onclick="openThanksModal()">+ 기록 작성</button>
                 </div>
                 <div id="thanksLogList"></div>
@@ -1214,7 +1304,7 @@
         } else {
             // 나머지 그룹 → 게시판 UI
             contentArea.innerHTML = `
-                <div style="margin-bottom:20px; border:1px solid #eee; padding:15px; border-radius:8px; background:#fff;">
+                <div style="margin-bottom:20px; border:1px solid var(--line); padding:15px; border-radius:8px; background:var(--card);">
                     <textarea id="groupInputPost" class="feed-input" placeholder="그룹에 글을 남겨보세요!"></textarea>
                     <button class="btn-submit" onclick="saveGroupPost()">글 쓰기</button>
                 </div>
@@ -1285,7 +1375,7 @@
             }
             li.innerHTML = `
                 <div class="feed-header">
-                    <div><span style="font-weight:bold;">${post.name}</span><span style="font-size:0.8em; color:#999; margin-left:8px;">${dateStr}</span></div>
+                    <div><span style="font-weight:bold;">${post.name}</span><span style="font-size:0.8em; color:var(--muted); margin-left:8px;">${dateStr}</span></div>
                     <div>${actionBtns}</div>
                 </div>
                 <div style="white-space:pre-wrap;">${post.content}</div>
@@ -1445,7 +1535,7 @@
                 let cellContent = '<div class="schedule-cell">';
                 if (count > 0) {
                     const level = Math.min(5, Math.ceil(count / Math.max(1, totalMembers) * 5) || 1);
-                    const textColor = level >= 3 ? '#fff' : '#2c3e50';
+                    const textColor = level >= 3 ? '#fff' : 'var(--ink)';
                     const shadow = level >= 3 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none';
                     cellContent += `<span class="schedule-cell-count" style="color:${textColor}; text-shadow:${shadow}">${count}</span>`;
                 }
@@ -1543,7 +1633,7 @@
         const top5 = allSlots.slice(0, 5);
 
         if (top5.length === 0) {
-            summaryEl.innerHTML = '<h4>📊 가장 많이 가능한 시간</h4><div style="text-align:center; color:#999; padding:10px;">아직 등록된 스케줄이 없습니다.</div>';
+            summaryEl.innerHTML = '<h4>📊 가장 많이 가능한 시간</h4><div style="text-align:center; color:var(--muted); padding:10px;">아직 등록된 스케줄이 없습니다.</div>';
             return;
         }
 
@@ -1678,10 +1768,10 @@
                 ];
                 const thanksItems = items.map(item => {
                     const val = c[item.key] && c[item.key].trim();
-                    return `<div style="display:flex; align-items:flex-start; gap:4px; background:#fafafa; border-radius:7px; padding:5px 8px;">
+                    return `<div style="display:flex; align-items:flex-start; gap:4px; background:var(--panel); border-radius:7px; padding:5px 8px;">
                         <span class="diet-meal-icon" style="flex-shrink:0;">🙏</span>
                         <span class="diet-meal-label" style="flex-shrink:0;">${item.label}</span>
-                        <span style="font-size:0.83em; color:${val ? '#333' : '#ccc'}; white-space:normal; word-break:break-word; overflow-wrap:break-word; flex:1; min-width:0;">${val || '-'}</span>
+                        <span style="font-size:0.83em; color:${val ? 'var(--ink)' : 'var(--muted)'}; white-space:normal; word-break:break-word; overflow-wrap:break-word; flex:1; min-width:0;">${val || '-'}</span>
                     </div>`;
                 }).join('');
                 return `<div class="diet-person-card">
@@ -1865,7 +1955,7 @@
         document.getElementById('taskModal').style.display = 'flex';
     }
 
-    function renderFeed() { const listEl = document.getElementById('feedList'); listEl.innerHTML = ''; if (!dbData.feeds || dbData.feeds.length === 0) { listEl.innerHTML = '<li style="text-align:center; padding:20px; color:#999;">첫 글을 남겨보세요!</li>'; return; } const myName = document.getElementById('userName').value.trim(); [...dbData.feeds].reverse().forEach(feed => { const li = document.createElement('li'); li.className = 'feed-item'; let content = feed.content; let imgHtml = ""; try { if(content.startsWith("{")) { const parsed = JSON.parse(content); content = parsed.text; if(parsed.img) imgHtml = `<img src="${parsed.img}" class="feed-img">`; } } catch(e) {} const myComments = dbData.comments ? dbData.comments.filter(c => c.feedId === feed.id) : []; let commentHtml = ''; myComments.forEach(c => { commentHtml += `<li class="comment-item"><span class="comment-author">${c.authorName || c.name || '알 수 없음'}</span><span class="comment-content">${c.content}</span></li>`; }); const dateStr = new Date(feed.timestamp).toLocaleString();
+    function renderFeed() { const listEl = document.getElementById('feedList'); listEl.innerHTML = ''; if (!dbData.feeds || dbData.feeds.length === 0) { listEl.innerHTML = '<li style="text-align:center; padding:20px; color:var(--muted);">첫 글을 남겨보세요!</li>'; return; } const myName = document.getElementById('userName').value.trim(); [...dbData.feeds].reverse().forEach(feed => { const li = document.createElement('li'); li.className = 'feed-item'; let content = feed.content; let imgHtml = ""; try { if(content.startsWith("{")) { const parsed = JSON.parse(content); content = parsed.text; if(parsed.img) imgHtml = `<img src="${parsed.img}" class="feed-img">`; } } catch(e) {} const myComments = dbData.comments ? dbData.comments.filter(c => c.feedId === feed.id) : []; let commentHtml = ''; myComments.forEach(c => { commentHtml += `<li class="comment-item"><span class="comment-author">${c.authorName || c.name || '알 수 없음'}</span><span class="comment-content">${c.content}</span></li>`; }); const dateStr = new Date(feed.timestamp).toLocaleString();
     let actionBtns = "";
     if(myName && (feed.authorName || feed.name) === myName) {
         actionBtns = `
@@ -1873,7 +1963,7 @@
             <button class="btn-delete" onclick="deleteFeed('${feed.id}')">삭제</button>
         `;
     }
-    li.innerHTML = `<div class="feed-header"><div><span style="font-weight:bold;">${feed.authorName || feed.name || '알 수 없음'}</span><span style="font-size:0.8em; color:#999; margin-left:8px;">${dateStr}</span></div><div>${actionBtns}</div></div>${imgHtml}<div style="white-space:pre-wrap;">${content}</div><div class="comment-section"><ul class="comment-list">${commentHtml}</ul><div style="display:flex; gap:5px;"><input type="text" id="commentInput-${feed.id}" placeholder="댓글 달기..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;"><button class="btn-submit" style="width:60px; padding:0; margin-top:0;" onclick="saveComment('${feed.id}')">등록</button></div></div>`; listEl.appendChild(li); }); }
+    li.innerHTML = `<div class="feed-header"><div><span style="font-weight:bold;">${feed.authorName || feed.name || '알 수 없음'}</span><span style="font-size:0.8em; color:var(--muted); margin-left:8px;">${dateStr}</span></div><div>${actionBtns}</div></div>${imgHtml}<div style="white-space:pre-wrap;">${content}</div><div class="comment-section"><ul class="comment-list">${commentHtml}</ul><div style="display:flex; gap:5px;"><input type="text" id="commentInput-${feed.id}" placeholder="댓글 달기..." style="flex:1; padding:8px; border:1px solid var(--line); border-radius:4px;"><button class="btn-submit" style="width:60px; padding:0; margin-top:0;" onclick="saveComment('${feed.id}')">등록</button></div></div>`; listEl.appendChild(li); }); }
 
     function getFirstTaskDate(name) { const tasks = dbData.tasks ? dbData.tasks.filter(t => t.name === name) : []; if (tasks.length === 0) return null; return tasks.map(t => parseDateKey(t.date)).sort((a,b) => a-b)[0]; }
     function getMemberColor(member) {
@@ -1900,7 +1990,7 @@
         const listEl = document.getElementById('memberList');
         listEl.innerHTML = '';
         if (!dbData.members || dbData.members.length === 0) {
-            listEl.innerHTML = '<p style="text-align:center; color:#999;">멤버가 없습니다.</p>';
+            listEl.innerHTML = '<p style="text-align:center; color:var(--muted);">멤버가 없습니다.</p>';
             return;
         }
         dbData.members.forEach(member => {
