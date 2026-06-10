@@ -465,6 +465,20 @@
         .theme-toggle:hover { transform: translateY(-2px) rotate(15deg); }
         .theme-toggle:active { transform: scale(.88); }
 
+        /* ===== 당겨서 새로고침 (Pull-to-Refresh) ===== */
+        body { overscroll-behavior-y: contain; }
+        .ptr-indicator {
+            position: fixed; top: -52px; left: 50%; transform: translate(-50%, 0);
+            width: 42px; height: 42px; border-radius: 50%;
+            background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow-md);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1500; transition: transform .3s var(--ease); pointer-events: none;
+        }
+        .ptr-arrow { color: var(--brand); font-size: 1.15em; font-weight: 700; transition: transform .2s var(--ease); }
+        .ptr-indicator.ready .ptr-arrow { transform: rotate(180deg); }
+        .ptr-indicator.loading .ptr-arrow { display: none; }
+        .ptr-indicator.loading::after { content: ''; width: 18px; height: 18px; border: 3px solid var(--brand-soft); border-top-color: var(--brand); border-radius: 50%; animation: spin .8s linear infinite; }
+
         /* ===== 다크 모드 ===== */
         :root[data-theme="dark"] {
             color-scheme: dark;
@@ -542,6 +556,8 @@
 </div>
 
 <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="다크 모드">🌙</button>
+
+<div id="ptrIndicator" class="ptr-indicator"><span class="ptr-arrow">&darr;</span></div>
 
 <div class="container">
     <input type="text" id="userName" class="name-input" placeholder="이름을 입력하세요 (필수)">
@@ -826,6 +842,56 @@
         if (meta) meta.content = dark ? '#0f1218' : '#e74c3c';
     }
 
+    // ==================== 당겨서 새로고침 (Pull-to-Refresh) ====================
+    const PTR_THRESHOLD = 70;
+    let _ptrStartY = null, _ptrDist = 0, _ptrRefreshing = false;
+    function _ptrModalOpen() {
+        return Array.prototype.some.call(document.querySelectorAll('.modal'), m => m.style.display === 'flex');
+    }
+    function _ptrUpdate() {
+        const el = document.getElementById('ptrIndicator');
+        if (!el) return;
+        if (_ptrDist <= 0) { el.style.transition = ''; el.style.transform = ''; el.classList.remove('ready'); return; }
+        el.style.transition = 'none'; // 손가락을 따라가도록 트래킹 중에는 트랜지션 제거
+        el.style.transform = 'translate(-50%, ' + _ptrDist + 'px)';
+        el.classList.toggle('ready', _ptrDist >= PTR_THRESHOLD);
+    }
+    document.addEventListener('touchstart', function(e) {
+        if (_ptrRefreshing || window.scrollY > 0 || _ptrModalOpen()) { _ptrStartY = null; return; }
+        _ptrStartY = e.touches[0].clientY;
+        _ptrDist = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function(e) {
+        if (_ptrStartY === null || _ptrRefreshing) return;
+        const raw = e.touches[0].clientY - _ptrStartY;
+        if (raw <= 0 || window.scrollY > 0) { _ptrDist = 0; _ptrUpdate(); return; }
+        _ptrDist = Math.min(raw * 0.5, 110);
+        _ptrUpdate();
+    }, { passive: true });
+    document.addEventListener('touchend', function() {
+        if (_ptrStartY === null || _ptrRefreshing) return;
+        _ptrStartY = null;
+        const el = document.getElementById('ptrIndicator');
+        if (!el) return;
+        el.style.transition = '';
+        if (_ptrDist >= PTR_THRESHOLD) {
+            _ptrRefreshing = true;
+            el.classList.remove('ready');
+            el.classList.add('loading');
+            el.style.transform = 'translate(-50%, ' + (PTR_THRESHOLD + 10) + 'px)';
+            Promise.resolve(loadData(true, true)).catch(() => {}).then(() => {
+                _ptrRefreshing = false;
+                _ptrDist = 0;
+                el.classList.remove('loading');
+                el.style.transform = '';
+            });
+        } else {
+            _ptrDist = 0;
+            el.style.transform = '';
+            el.classList.remove('ready');
+        }
+    });
+
     window.onload = function() {
         const savedName = localStorage.getItem('study_username');
         if(savedName) {
@@ -918,18 +984,19 @@
         }
     }
 
-    function loadData(forceRefresh) {
+    function loadData(forceRefresh, silent) {
         const loadingEl = document.getElementById('loadingMsg');
         if(typeof SCRIPT_URL === 'undefined' || SCRIPT_URL.includes("여기에")) { loadingEl.style.display='none'; alert("스크립트 주소를 넣어주세요!"); return; }
         if (forceRefresh) sessionStorage.removeItem('bs_cache');
         // 캐시된 데이터가 있으면 즉시 렌더링 (GAS 응답 전에 UI 표시)
+        // silent 모드(당겨서 새로고침)에서는 오버레이 없이 기존 화면 유지
         const cached = sessionStorage.getItem('bs_cache');
         if (cached) {
             try { _applyData(JSON.parse(cached), false); } catch(e) {}
-        } else {
+        } else if (!silent) {
             loadingEl.style.display = 'flex';
         }
-        fetch(SCRIPT_URL + "?action=getAllData")
+        return fetch(SCRIPT_URL + "?action=getAllData")
             .then(response => response.json())
             .then(data => {
                 sessionStorage.setItem('bs_cache', JSON.stringify(data));
