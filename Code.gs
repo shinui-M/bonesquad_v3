@@ -207,24 +207,7 @@ function doPost(e) {
 
   try {
     if (p.action === 'saveTask') {
-      var tSheet = ss.getSheetByName('Tasks');
-      var tLr = tSheet.getLastRow();
-      var pDate = String(p.date).trim();
-      var pName = String(p.name).trim();
-      if (tLr > 0) {
-        var tVals = tSheet.getRange(1, 1, tLr, 3).getValues();
-        // 역순으로 매칭 행 전부 삭제 (삭제 시 인덱스 밀림 방지)
-        for (var ti = tVals.length - 1; ti >= 0; ti--) {
-          var dVal = tVals[ti][0];
-          var dStr = (dVal instanceof Date)
-            ? Utilities.formatDate(dVal, tz, 'yyyy-M-d')
-            : String(dVal).trim();
-          if (dStr === pDate && String(tVals[ti][1]).trim() === pName) {
-            tSheet.deleteRow(ti + 1);
-          }
-        }
-      }
-      tSheet.appendRow([p.date, p.name, p.task]);
+      upsert(ss, 'Tasks', {date: p.date, name: p.name}, [p.date, p.name, p.task]);
 
     } else if (p.action === 'saveFeed') {
       ss.getSheetByName('Feeds').appendRow([p.id, p.name, p.content, p.timestamp || now]);
