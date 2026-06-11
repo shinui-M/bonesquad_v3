@@ -164,6 +164,7 @@
         .btn-move { background: none; border: none; color: var(--brand); font-size: 1.3em; cursor: pointer; padding: 0 8px; border-radius: 8px; transition: background .2s, transform .15s; }
         .btn-move:hover { background: var(--brand-soft); }
         .btn-move:active { transform: scale(.88); }
+        .btn-icon { width: 44px; padding: 8px 0; justify-content: center; font-size: 1.05em; }
 
         /* 멤버 프로필 카드 그리드 */
         .weekly-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; box-sizing: border-box; }
@@ -202,23 +203,44 @@
         .weekly-grid > :nth-child(6), .member-grid > :nth-child(6) { animation-delay: .25s; }
         .weekly-grid > :nth-child(n+7), .member-grid > :nth-child(n+7) { animation-delay: .3s; }
 
-        /* 주간 달력 모달 */
-        .week-grid-modal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .week-day-col {
-            text-align: center; min-height: 100px; background: var(--field); border: 1.5px solid var(--line);
-            border-radius: 12px; padding: 7px 4px; cursor: pointer;
-            transition: transform .2s var(--ease), border-color .2s, background .2s, box-shadow .2s;
-        }
-        .week-day-col:hover { border-color: rgba(240,69,92,.5); background: var(--brand-soft); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-        .week-day-col.today { border: 2px solid var(--brand); background: var(--brand-soft); }
-        .week-day-col.selected { border: 2px solid var(--blue); background: #eff6ff; }
-        .week-day-label { font-size: .75em; color: var(--muted); margin-bottom: 2px; font-weight: 600; }
+        /* 월간 달력 모달 */
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .week-day-label { font-size: .78em; color: var(--muted); font-weight: 600; text-align: center; padding: 4px 0; }
         .week-day-label.sun { color: var(--brand); }
         .week-day-label.sat { color: var(--blue); }
-        .week-day-num { font-weight: 800; font-size: 1.1em; margin-bottom: 4px; }
-        .week-day-avatars { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; }
-        .week-day-avatars img { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); }
-        .week-day-avatars .avatar-faint { opacity: .3; filter: grayscale(100%); }
+        .month-day-cell {
+            text-align: center; padding: 11px 0; background: var(--field); border: 1.5px solid var(--line);
+            border-radius: 10px; cursor: pointer; font-weight: 700; font-size: .92em; color: var(--ink);
+            transition: transform .15s var(--ease), border-color .2s, background .2s; user-select: none;
+        }
+        .month-day-cell:hover { border-color: rgba(240,69,92,.5); background: var(--brand-soft); transform: translateY(-1px); }
+        .month-day-cell:active { transform: scale(.94); }
+        .month-day-cell.other-month { opacity: .35; }
+        .month-day-cell.sun { color: var(--brand); }
+        .month-day-cell.sat { color: var(--blue); }
+        .month-day-cell.today { border: 2px solid var(--brand); background: var(--brand-soft); }
+        .month-day-cell.selected { border: 2px solid var(--blue); background: #eff6ff; }
+
+        /* 오늘의 MVP 스트립 */
+        .mvp-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .mvp-card {
+            display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px;
+            border: 1.5px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm);
+            cursor: pointer; min-width: 0; flex-wrap: wrap;
+            transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s;
+            animation: rise .45s var(--ease) backwards;
+        }
+        .mvp-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .mvp-card:active { transform: scale(.98); }
+        .mvp-card.mvp-star { border-color: rgba(245,184,11,.45); background: linear-gradient(160deg, var(--card) 55%, rgba(245,184,11,.1)); }
+        .mvp-card.mvp-fire { border-color: rgba(240,69,92,.4); background: linear-gradient(160deg, var(--card) 55%, var(--brand-soft)); }
+        .mvp-label { font-size: .72em; font-weight: 800; color: var(--muted); letter-spacing: .02em; flex-basis: 100%; }
+        .mvp-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: var(--chip); border: 2px solid var(--card); box-shadow: 0 0 0 1.5px var(--line); flex-shrink: 0; }
+        .mvp-info { min-width: 0; flex: 1; }
+        .mvp-name { font-weight: 800; font-size: .92em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mvp-extra { font-weight: 600; font-size: .85em; color: var(--muted); }
+        .mvp-value { font-size: .8em; margin-top: 2px; }
+        .mvp-empty { color: var(--muted); font-size: .85em; padding: 8px 0; }
 
         /* 그룹 스타일 */
         .group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
@@ -512,7 +534,7 @@
         [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #323a4c; border-color: var(--bg); }
         [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #404a60; }
         [data-theme="dark"] .group-img { background: linear-gradient(135deg, #1d2230, #232938); color: #4a5268; }
-        [data-theme="dark"] .week-day-col.selected { background: rgba(59,130,246,.16); }
+        [data-theme="dark"] .month-day-cell.selected { background: rgba(59,130,246,.16); }
         [data-theme="dark"] .btn-edit:hover { background: rgba(59,130,246,.16); }
         [data-theme="dark"] .btn-comment:hover { background: rgba(59,130,246,.16); }
         [data-theme="dark"] .btn-fire:hover { background: rgba(240,69,92,.16); }
@@ -535,14 +557,15 @@
             .tabs { top: 6px; gap: 2px; padding: 4px; }
             .theme-toggle { width: 46px; height: 46px; right: 14px; bottom: 14px; font-size: 1.2em; }
             .tab-link { padding: 11px 2px; font-size: .82em; min-width: auto; white-space: nowrap; }
-            .calendar-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
-            .calendar-toolbar-left, .calendar-toolbar-center, .calendar-toolbar-right { justify-content: center; }
+            .calendar-toolbar { gap: 8px; padding: 10px 12px; }
+            .calendar-toolbar-center { order: -1; flex-basis: 100%; justify-content: center; }
             .btn-move { font-size: 1.2em; padding: 0 10px; }
             .weekly-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
             .member-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-            .week-grid-modal { gap: 2px; }
-            .week-day-col { padding: 4px 2px; min-height: 70px; }
-            .week-day-avatars img { width: 14px; height: 14px; }
+            .month-grid { gap: 3px; }
+            .month-day-cell { padding: 9px 0; font-size: .85em; }
+            .mvp-strip { gap: 8px; }
+            .mvp-card { padding: 10px 11px; gap: 8px; }
         }
     </style>
 </head>
@@ -571,12 +594,10 @@
 
     <div id="calendarTab" class="tab-content active">
         <h2>오늘의 성과</h2>
-        <div class="sub-title">오늘, 얼마나 뼈를 갈았는가?</div>
         <div class="calendar-toolbar">
             <div class="calendar-toolbar-left">
-                <button class="btn-toolbar" onclick="openWeeklyCalendarModal()">주간 달력</button>
-                <button class="btn-toolbar" onclick="loadData(true)">새로고침</button>
-                <button class="btn-toolbar" onclick="goToToday()">오늘</button>
+                <button class="btn-toolbar btn-icon" onclick="openCalendarModal()" title="달력">📅</button>
+                <button class="btn-toolbar btn-icon" onclick="goToToday()" title="오늘로 이동">🎯</button>
             </div>
             <div class="calendar-toolbar-center">
                 <button class="btn-move" onclick="changeDay(-1)">&lsaquo;</button>
@@ -587,6 +608,7 @@
                 <button class="btn-toolbar primary" onclick="openModalToday()">성과 작성</button>
             </div>
         </div>
+        <div id="mvpStrip" class="mvp-strip"></div>
         <div class="weekly-grid" id="weeklyCalendar"></div>
     </div>
 
@@ -708,20 +730,20 @@
     </div>
 </div>
 
-<!-- 주간 달력 모달 -->
-<div id="weeklyCalendarModal" class="modal">
-    <div class="modal-content wide">
+<!-- 월간 달력 모달 -->
+<div id="calendarModal" class="modal">
+    <div class="modal-content">
         <div class="modal-header">
-            <span>주간 달력</span>
-            <span class="close-btn" onclick="closeWeeklyCalendarModal()">&times;</span>
+            <span>📅 달력</span>
+            <span class="close-btn" onclick="closeCalendarModal()">&times;</span>
         </div>
         <div class="modal-body">
             <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-bottom:15px;">
-                <button class="btn-move" onclick="changeWeekInModal(-7)">&lsaquo;</button>
-                <span id="weeklyModalRange" style="font-weight:bold; font-size:1.1em;"></span>
-                <button class="btn-move" onclick="changeWeekInModal(7)">&rsaquo;</button>
+                <button class="btn-move" onclick="changeMonthInModal(-1)">&lsaquo;</button>
+                <span id="monthModalRange" style="font-weight:bold; font-size:1.1em;"></span>
+                <button class="btn-move" onclick="changeMonthInModal(1)">&rsaquo;</button>
             </div>
-            <div class="week-grid-modal" id="weekGridModal"></div>
+            <div class="month-grid" id="monthGridModal"></div>
         </div>
     </div>
 </div>
@@ -1083,6 +1105,56 @@
                 }
             });
         }
+
+        renderMvpStrip(dateKey);
+    }
+
+    // ==================== 오늘의 MVP 스트립 ====================
+    function renderMvpStrip(dateKey) {
+        const strip = document.getElementById('mvpStrip');
+        if (!strip) return;
+        const avatarOf = name => {
+            const m = dbData.members ? dbData.members.find(mm => mm.name === name) : null;
+            return m && m.avatar ? m.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${name}`;
+        };
+
+        // ⭐ 평점 MVP — 해당 날짜 최고 평점 (0점 제외)
+        const rated = (dbData.tasks || [])
+            .filter(t => t.date === dateKey)
+            .map(t => ({ name: t.name, rating: parseFloat(parseTaskContent(t.task).rating) || 0 }))
+            .filter(t => t.rating > 0);
+        const maxRating = rated.length ? Math.max(...rated.map(t => t.rating)) : 0;
+        const ratingWinners = rated.filter(t => t.rating === maxRating).map(t => t.name);
+
+        // 🔥 불꽃 MVP — 해당 날짜 불 이모지 최다 수신자
+        const fireCounts = {};
+        (dbData.taskLikes || []).filter(l => l.date === dateKey).forEach(l => {
+            fireCounts[l.targetName] = (fireCounts[l.targetName] || 0) + 1;
+        });
+        const maxFire = Object.keys(fireCounts).length ? Math.max(...Object.values(fireCounts)) : 0;
+        const fireWinners = Object.keys(fireCounts).filter(n => fireCounts[n] === maxFire);
+
+        const winnerHtml = (winners, valueHtml) => {
+            const first = winners[0];
+            const extra = winners.length > 1 ? ` <span class="mvp-extra">외 ${winners.length - 1}명</span>` : '';
+            return `
+                <img src="${avatarOf(first)}" class="mvp-avatar" loading="lazy">
+                <div class="mvp-info">
+                    <div class="mvp-name">${first}${extra}</div>
+                    <div class="mvp-value">${valueHtml}</div>
+                </div>`;
+        };
+        const emptyHtml = '<div class="mvp-empty">아직 없음</div>';
+
+        strip.innerHTML = `
+            <div class="mvp-card mvp-star" onclick="openDayDetail('${dateKey}')">
+                <span class="mvp-label">⭐ 오늘의 MVP</span>
+                ${ratingWinners.length ? winnerHtml(ratingWinners, renderStars(maxRating.toFixed(1))) : emptyHtml}
+            </div>
+            <div class="mvp-card mvp-fire" onclick="openDayDetail('${dateKey}')">
+                <span class="mvp-label">🔥 불꽃 MVP</span>
+                ${maxFire > 0 ? winnerHtml(fireWinners, '🔥 ' + maxFire + '개') : emptyHtml}
+            </div>`;
     }
 
     function openModalToday() {
@@ -1198,84 +1270,67 @@
     function changeDay(offset) { currentDate.setDate(currentDate.getDate() + offset); renderWeeklyCalendar(); }
     function goToToday() { currentDate = new Date(); renderWeeklyCalendar(); }
 
-    // ==================== 주간 달력 모달 ====================
-    function openWeeklyCalendarModal() {
+    // ==================== 월간 달력 모달 ====================
+    function openCalendarModal() {
         weekModalDate = new Date(currentDate);
-        renderWeekGridModal();
-        document.getElementById('weeklyCalendarModal').style.display = 'flex';
+        renderMonthGridModal();
+        document.getElementById('calendarModal').style.display = 'flex';
     }
 
-    function closeWeeklyCalendarModal() {
-        document.getElementById('weeklyCalendarModal').style.display = 'none';
+    function closeCalendarModal() {
+        document.getElementById('calendarModal').style.display = 'none';
     }
 
-    function changeWeekInModal(offset) {
-        weekModalDate.setDate(weekModalDate.getDate() + offset);
-        renderWeekGridModal();
+    function changeMonthInModal(offset) {
+        weekModalDate.setDate(1); // 31일 등에서 짧은 달로 이동 시 월 건너뜀 방지
+        weekModalDate.setMonth(weekModalDate.getMonth() + offset);
+        renderMonthGridModal();
     }
 
-    function renderWeekGridModal() {
-        const grid = document.getElementById('weekGridModal');
+    function renderMonthGridModal() {
+        const grid = document.getElementById('monthGridModal');
         grid.innerHTML = '';
         const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const year = weekModalDate.getFullYear();
+        const month = weekModalDate.getMonth();
 
-        // 해당 주의 일요일 계산
-        const startOfWeek = new Date(weekModalDate);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        document.getElementById('monthModalRange').innerText = `${year}년 ${month + 1}월`;
 
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        // 요일 헤더
+        days.forEach((d, i) => {
+            const h = document.createElement('div');
+            h.className = 'week-day-label' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '');
+            h.textContent = d;
+            grid.appendChild(h);
+        });
 
-        document.getElementById('weeklyModalRange').innerText =
-            `${startOfWeek.getFullYear()}.${startOfWeek.getMonth()+1}.${startOfWeek.getDate()} ~ ${endOfWeek.getMonth()+1}.${endOfWeek.getDate()}`;
-
-        const todayKey = new Date().getFullYear() + '-' + (new Date().getMonth()+1) + '-' + new Date().getDate();
+        const now = new Date();
+        const todayKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
         const currentDateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()+1}-${currentDate.getDate()}`;
 
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(startOfWeek);
-            d.setDate(d.getDate() + i);
-            const dKey = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+        // 1일이 속한 주 일요일 ~ 말일이 속한 주 토요일
+        const start = new Date(year, month, 1);
+        start.setDate(start.getDate() - start.getDay());
+        const end = new Date(year, month + 1, 0);
+        end.setDate(end.getDate() + (6 - end.getDay()));
 
-            const col = document.createElement('div');
-            col.className = 'week-day-col';
-            if (dKey === todayKey) col.classList.add('today');
-            if (dKey === currentDateKey) col.classList.add('selected');
-
-            col.onclick = () => {
-                currentDate = new Date(d);
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const cellDate = new Date(d);
+            const dKey = `${cellDate.getFullYear()}-${cellDate.getMonth()+1}-${cellDate.getDate()}`;
+            const cell = document.createElement('div');
+            cell.className = 'month-day-cell';
+            if (cellDate.getMonth() !== month) cell.classList.add('other-month');
+            if (cellDate.getDay() === 0) cell.classList.add('sun');
+            if (cellDate.getDay() === 6) cell.classList.add('sat');
+            if (dKey === todayKey) cell.classList.add('today');
+            if (dKey === currentDateKey) cell.classList.add('selected');
+            cell.textContent = cellDate.getDate();
+            cell.onclick = () => {
+                currentDate = cellDate;
                 renderWeeklyCalendar();
-                closeWeeklyCalendarModal();
+                closeCalendarModal();
             };
-
-            let labelClass = 'week-day-label';
-            if (i === 0) labelClass += ' sun';
-            if (i === 6) labelClass += ' sat';
-
-            const dayTasks = dbData.tasks ? dbData.tasks.filter(t => t.date === dKey) : [];
-            const submittedNames = new Set(dayTasks.map(t => t.name));
-
-            let avatarsHtml = '';
-            dayTasks.forEach(t => {
-                const memberInfo = dbData.members ? dbData.members.find(m => m.name === t.name) : null;
-                const aUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${t.name}`;
-                avatarsHtml += `<img src="${aUrl}" title="${t.name}" loading="lazy">`;
-            });
-            if (dbData.members) {
-                dbData.members.forEach(m => {
-                    if (!submittedNames.has(m.name) && !isBeforeFirstTask(m.name, dKey)) {
-                        const aUrl = m.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${m.name}`;
-                        avatarsHtml += `<img src="${aUrl}" class="avatar-faint" title="${m.name} (미작성)" loading="lazy">`;
-                    }
-                });
-            }
-
-            col.innerHTML = `
-                <div class="${labelClass}">${days[i]}</div>
-                <div class="week-day-num">${d.getDate()}</div>
-                <div class="week-day-avatars">${avatarsHtml}</div>
-            `;
-            grid.appendChild(col);
+            grid.appendChild(cell);
         }
     }
 
@@ -2210,7 +2265,7 @@
         if(e.target == document.getElementById('taskModal')) closeModal();
         if(e.target == document.getElementById('dayDetailModal')) closeDayDetail();
         if(e.target == document.getElementById('dietModal')) document.getElementById('dietModal').style.display='none';
-        if(e.target == document.getElementById('weeklyCalendarModal')) closeWeeklyCalendarModal();
+        if(e.target == document.getElementById('calendarModal')) closeCalendarModal();
         if(e.target == document.getElementById('taskCommentModal')) closeTaskComments();
     }
 </script>
