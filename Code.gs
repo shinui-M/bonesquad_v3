@@ -3,6 +3,8 @@
 // saveThanksLog: 감사일기 그룹 Thankslog 시트 연동 추가
 // =============================================================
 
+var _tz = null; // 스프레드시트 시간대 (doGet/doPost에서 설정)
+
 var COLS = {
   Tasks:               ['date','name','task'],
   Feeds:               ['id','authorName','content','timestamp'],
@@ -18,7 +20,7 @@ var COLS = {
 
 function cellStr(val) {
   if (val instanceof Date) {
-    return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-M-d');
+    return Utilities.formatDate(val, _tz || Session.getScriptTimeZone(), 'yyyy-M-d');
   }
   return (val !== undefined && val !== null) ? String(val) : '';
 }
@@ -141,6 +143,7 @@ function deduplicateTasks() {
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    _tz = ss.getSpreadsheetTimeZone();
 
     function safe(name) {
       try { return readSheet(ss, name); } catch(err) { return []; }
@@ -203,7 +206,8 @@ function doPost(e) {
   try { p = JSON.parse(e.postData.contents); } catch(err) { return ok(); }
 
   var now = new Date().toISOString();
-  var tz = ss.getSpreadsheetTimeZone();
+  _tz = ss.getSpreadsheetTimeZone();
+  var tz = _tz;
 
   try {
     if (p.action === 'saveTask') {
