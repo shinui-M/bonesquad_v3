@@ -397,6 +397,22 @@
         .comment-author { color: var(--brand); font-weight: 700; white-space: nowrap; }
         .comment-content { color: var(--ink-soft); word-break: break-all; }
 
+        /* 뼈이스북 그리드 */
+        .feed-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+        .feed-grid-item { position: relative; aspect-ratio: 1; overflow: hidden; cursor: pointer; background: var(--panel); }
+        .feed-grid-item:hover .feed-grid-overlay { opacity: 1; }
+        .feed-grid-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .feed-grid-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; font-size: .78em; color: var(--ink); text-align: center; overflow: hidden; box-sizing: border-box; background: linear-gradient(135deg, var(--brand-soft) 0%, var(--chip) 100%); word-break: break-all; line-height: 1.4; }
+        [data-theme="dark"] .feed-grid-text { background: linear-gradient(135deg, rgba(240,69,92,.15) 0%, var(--panel) 100%); }
+        .feed-grid-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.38); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; color: #fff; font-size: .9em; font-weight: 700; gap: 10px; }
+        .feed-grid-author { position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 7px; font-size: .68em; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.55)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* 피드 상세 모달 */
+        .feed-detail-img { width: 100%; max-height: 360px; object-fit: cover; border-radius: 12px; margin-bottom: 14px; border: 1px solid var(--line); }
+        .feed-detail-content { white-space: pre-wrap; line-height: 1.65; color: var(--ink); margin-bottom: 14px; }
+        .feed-detail-comments { display: flex; flex-direction: column; gap: 5px; max-height: 180px; overflow-y: auto; padding: 10px 12px; background: var(--panel); border-radius: 10px; margin-bottom: 12px; }
+        .feed-detail-comment { display: flex; gap: 8px; font-size: .84em; align-items: flex-start; }
+        .feed-detail-comment-input { display: flex; gap: 8px; align-items: center; }
+
         /* 멤버 소개 */
         .avatar-preview-container { display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; max-width: 460px; }
         .avatar-preview { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; background: var(--chip); border: 3px solid var(--card); box-shadow: 0 0 0 2px var(--line), var(--shadow-sm); margin: 0 auto 14px; display: block; transition: transform .3s var(--ease); }
@@ -619,7 +635,7 @@
             <input type="text" id="inputFeedImg" placeholder="[선택] 사진 이미지 주소(URL)를 붙여넣으세요" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box; margin-bottom:10px;">
             <button class="btn-submit" onclick="saveFeed()">게시하기</button>
         </div>
-        <ul id="feedList" class="feed-list"></ul>
+        <div id="feedList" class="feed-grid"></div>
     </div>
 
     <div id="groupTab" class="tab-content">
@@ -748,6 +764,17 @@
     </div>
 </div>
 
+<!-- 피드 상세 모달 -->
+<div id="feedDetailModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="feedDetailTitle">게시물</span>
+            <span class="close-btn" onclick="closeFeedDetail()">&times;</span>
+        </div>
+        <div class="modal-body" id="feedDetailBody"></div>
+    </div>
+</div>
+
 <!-- 다이어트 모달 -->
 <div id="dietModal" class="modal">
     <div class="modal-content">
@@ -839,6 +866,7 @@
     let currentAvatarSeed = "";
     let currentGroup = null;
     let scheduleWeekDate = new Date();
+    let currentDetailFeedId = null;
 
     // 기본 그룹 (삭제 불가)
     const DEFAULT_GROUPS = [
@@ -2039,6 +2067,7 @@
         try { const parsed = JSON.parse(feed.content); imgUrl = parsed.img || ""; } catch(e) {}
         const newFeedData = { text: newContent, img: imgUrl };
         if(feed) feed.content = JSON.stringify(newFeedData);
+        closeFeedDetail();
         renderFeed();
         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'editFeed', id: id, name: name, content: JSON.stringify(newFeedData) }) });
     }
@@ -2077,15 +2106,87 @@
         document.getElementById('taskModal').style.display = 'flex';
     }
 
-    function renderFeed() { const listEl = document.getElementById('feedList'); listEl.innerHTML = ''; if (!dbData.feeds || dbData.feeds.length === 0) { listEl.innerHTML = '<li style="text-align:center; padding:20px; color:var(--muted);">첫 글을 남겨보세요!</li>'; return; } const myName = document.getElementById('userName').value.trim(); [...dbData.feeds].reverse().forEach(feed => { const li = document.createElement('li'); li.className = 'feed-item'; let content = feed.content; let imgHtml = ""; try { if(content.startsWith("{")) { const parsed = JSON.parse(content); content = parsed.text; if(parsed.img) imgHtml = `<img src="${parsed.img}" class="feed-img">`; } } catch(e) {} const myComments = dbData.comments ? dbData.comments.filter(c => c.feedId === feed.id) : []; let commentHtml = ''; myComments.forEach(c => { commentHtml += `<li class="comment-item"><span class="comment-author">${c.authorName || c.name || '알 수 없음'}</span><span class="comment-content">${c.content}</span></li>`; }); const dateStr = new Date(feed.timestamp).toLocaleString();
-    let actionBtns = "";
-    if(myName && (feed.authorName || feed.name) === myName) {
-        actionBtns = `
-            <button class="btn-edit" onclick="editFeed('${feed.id}', '${encodeURIComponent(content)}')">수정</button>
-            <button class="btn-delete" onclick="deleteFeed('${feed.id}')">삭제</button>
-        `;
+    function renderFeed() {
+        const listEl = document.getElementById('feedList');
+        listEl.innerHTML = '';
+        if (!dbData.feeds || dbData.feeds.length === 0) {
+            listEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">첫 글을 남겨보세요!</div>';
+            return;
+        }
+        [...dbData.feeds].reverse().forEach(feed => {
+            let content = feed.content;
+            let imgUrl = '';
+            try {
+                if (content.startsWith('{')) { const p = JSON.parse(content); content = p.text; imgUrl = p.img || ''; }
+            } catch(e) {}
+            const commentCount = dbData.comments ? dbData.comments.filter(c => c.feedId === feed.id).length : 0;
+            const authorName = feed.authorName || feed.name || '알 수 없음';
+            const item = document.createElement('div');
+            item.className = 'feed-grid-item';
+            item.onclick = () => openFeedDetail(feed.id);
+            if (imgUrl) {
+                item.innerHTML = `<img src="${imgUrl}" class="feed-grid-img" loading="lazy"><div class="feed-grid-overlay">💬 ${commentCount}</div><div class="feed-grid-author">${authorName}</div>`;
+            } else {
+                item.innerHTML = `<div class="feed-grid-text">${content}</div><div class="feed-grid-overlay">💬 ${commentCount}</div><div class="feed-grid-author">${authorName}</div>`;
+            }
+            listEl.appendChild(item);
+        });
     }
-    li.innerHTML = `<div class="feed-header"><div><span style="font-weight:bold;">${feed.authorName || feed.name || '알 수 없음'}</span><span style="font-size:0.8em; color:var(--muted); margin-left:8px;">${dateStr}</span></div><div>${actionBtns}</div></div>${imgHtml}<div style="white-space:pre-wrap;">${content}</div><div class="comment-section"><ul class="comment-list">${commentHtml}</ul><div style="display:flex; gap:5px;"><input type="text" id="commentInput-${feed.id}" placeholder="댓글 달기..." style="flex:1; padding:8px; border:1px solid var(--line); border-radius:4px;"><button class="btn-submit" style="width:60px; padding:0; margin-top:0;" onclick="saveComment('${feed.id}')">등록</button></div></div>`; listEl.appendChild(li); }); }
+
+    function openFeedDetail(feedId) {
+        const feed = dbData.feeds.find(f => f.id === feedId);
+        if (!feed) return;
+        currentDetailFeedId = feedId;
+        let content = feed.content;
+        let imgUrl = '';
+        try {
+            if (content.startsWith('{')) { const p = JSON.parse(content); content = p.text; imgUrl = p.img || ''; }
+        } catch(e) {}
+        const myName = document.getElementById('userName').value.trim();
+        const authorName = feed.authorName || feed.name || '알 수 없음';
+        const dateStr = new Date(feed.timestamp).toLocaleString('ko-KR');
+        const comments = dbData.comments ? dbData.comments.filter(c => c.feedId === feedId) : [];
+        const commentsHtml = comments.length
+            ? comments.map(c => `<div class="feed-detail-comment"><span class="comment-author">${c.authorName || c.name || '알 수 없음'}</span><span class="comment-content">${c.content}</span></div>`).join('')
+            : '<div style="color:var(--muted);font-size:.9em">아직 댓글이 없어요</div>';
+        let actionBtns = '';
+        if (myName && authorName === myName) {
+            actionBtns = `<button class="btn-edit" onclick="editFeed('${feedId}','${encodeURIComponent(content)}')">수정</button><button class="btn-delete" onclick="deleteFeed('${feedId}')">삭제</button>`;
+        }
+        document.getElementById('feedDetailTitle').textContent = authorName;
+        document.getElementById('feedDetailBody').innerHTML = `
+            ${imgUrl ? `<img src="${imgUrl}" class="feed-detail-img">` : ''}
+            <div class="feed-header" style="margin-bottom:10px">
+                <div><span style="font-weight:700">${authorName}</span><span style="font-size:.8em;color:var(--muted);margin-left:8px">${dateStr}</span></div>
+                <div style="display:flex;gap:6px">${actionBtns}</div>
+            </div>
+            <div class="feed-detail-content">${content}</div>
+            <div class="feed-detail-comments">${commentsHtml}</div>
+            <div class="feed-detail-comment-input">
+                <input type="text" id="detailCommentInput" placeholder="댓글 달기..." style="flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--ink);font-family:inherit;font-size:.9em">
+                <button class="btn-submit" style="padding:9px 16px;margin:0" onclick="saveCommentFromDetail()">등록</button>
+            </div>`;
+        document.getElementById('feedDetailModal').style.display = 'flex';
+    }
+
+    function closeFeedDetail() {
+        document.getElementById('feedDetailModal').style.display = 'none';
+        currentDetailFeedId = null;
+    }
+
+    function saveCommentFromDetail() {
+        const name = document.getElementById('userName').value.trim();
+        const input = document.getElementById('detailCommentInput');
+        const content = input ? input.value.trim() : '';
+        if (!name || !content || !currentDetailFeedId) { alert('댓글을 입력하세요.'); return; }
+        const newData = { action: 'saveComment', feedId: currentDetailFeedId, name, authorName: name, content, timestamp: new Date().toISOString() };
+        if (!dbData.comments) dbData.comments = [];
+        dbData.comments.push(newData);
+        const savedId = currentDetailFeedId;
+        renderFeed();
+        openFeedDetail(savedId);
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) });
+    }
 
     function getFirstTaskDate(name) { const tasks = dbData.tasks ? dbData.tasks.filter(t => t.name === name) : []; if (tasks.length === 0) return null; return tasks.map(t => parseDateKey(t.date)).sort((a,b) => a-b)[0]; }
     function getMemberColor(member) {
@@ -2146,7 +2247,7 @@
     }
     function saveTask() { const name = document.getElementById('userName').value.trim(); const rating = document.getElementById('inputRating').value; if(!name) { alert("이름을 입력해주세요!"); return; } const items = []; document.querySelectorAll('#taskItemsContainer .input-row').forEach(row => { const type = row.querySelector('.type-select').value; const content = row.querySelector('.content-input').value.trim(); if(content) items.push({ category: type, content: content }); }); if(items.length === 0) { alert("항목을 입력해주세요."); return; } const taskObject = { rating: rating, items: items }; const taskString = JSON.stringify(taskObject); const newData = { action: 'saveTask', date: selectedDateKey, name: name, task: taskString }; dbData.tasks = dbData.tasks.filter(t => !(t.date === selectedDateKey && t.name === name)); dbData.tasks.push(newData); renderWeeklyCalendar(); closeModal(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function saveFeed() { const name = document.getElementById('userName').value.trim(); const content = document.getElementById('inputFeed').value.trim(); const imgUrl = document.getElementById('inputFeedImg').value.trim(); if(!name || (!content && !imgUrl)) { alert("내용을 입력해주세요."); return; } const feedData = { text: content, img: imgUrl }; const newData = { action: 'saveFeed', id: 'feed_' + Date.now(), name: name, authorName: name, content: JSON.stringify(feedData), timestamp: new Date().toISOString() }; if(!dbData.feeds) dbData.feeds = []; dbData.feeds.push(newData); renderFeed(); document.getElementById('inputFeed').value = ''; document.getElementById('inputFeedImg').value = ''; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
-    function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
+    function deleteFeed(feedId) { if(!confirm("정말 이 글을 삭제하시겠습니까?")) return; const name = document.getElementById('userName').value.trim(); dbData.feeds = dbData.feeds.filter(f => f.id !== feedId); closeFeedDetail(); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFeed', id: feedId, name: name }) }); }
     function saveComment(feedId) { const name = document.getElementById('userName').value.trim(); const content = document.getElementById(`commentInput-${feedId}`).value.trim(); if(!name || !content) { alert("댓글을 입력하세요."); return; } const newData = { action: 'saveComment', feedId: feedId, name: name, authorName: name, content: content, timestamp: new Date().toISOString() }; if(!dbData.comments) dbData.comments = []; dbData.comments.push(newData); renderFeed(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); }
     function saveMember() { const name = document.getElementById('userName').value.trim(); const bio = document.getElementById('inputBio').value.trim(); let avatarUrl; if (currentAvatarMode === 'custom') { avatarUrl = document.getElementById('customAvatarUrl').value.trim(); if (!avatarUrl) { alert("이미지 URL을 입력하세요."); return; } } else { avatarUrl = document.getElementById('avatarPreview').src; } if(!name || !bio) { alert("이름과 소개를 입력하세요."); return; } const existing = dbData.members ? dbData.members.find(m => m.name === name) : null; const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString(); const bannerColor = document.getElementById('inputBannerColor').value; const newData = { action: 'saveMember', name: name, bio: bio, avatar: avatarUrl, createdAt: createdAt, bannerColor: bannerColor }; if(!dbData.members) dbData.members = []; const idx = dbData.members.findIndex(m => m.name === name); if(idx >= 0) dbData.members[idx] = newData; else dbData.members.push(newData); localStorage.setItem('study_profile_' + name, JSON.stringify({ bio: bio, avatar: avatarUrl, createdAt: createdAt, bannerColor: bannerColor })); renderMembers(); renderWeeklyCalendar(); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) }); alert("프로필 저장 완료!"); }
     function renderStars(rating) { const r = parseFloat(rating) || 0; const pct = Math.min(r / 5 * 100, 100); return `<span class="star-rating"><span>★★★★★</span><span class="star-fill" style="width:${pct}%">★★★★★</span></span> ${rating || '0'}`; }
@@ -2267,6 +2368,7 @@
         if(e.target == document.getElementById('dietModal')) document.getElementById('dietModal').style.display='none';
         if(e.target == document.getElementById('calendarModal')) closeCalendarModal();
         if(e.target == document.getElementById('taskCommentModal')) closeTaskComments();
+        if(e.target == document.getElementById('feedDetailModal')) closeFeedDetail();
     }
 </script>
 </body>
