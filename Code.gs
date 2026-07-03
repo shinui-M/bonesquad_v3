@@ -82,7 +82,10 @@ function upsert(ss, name, criteria, fullRow) {
   if (rowNum > 0) {
     for (var j = 0; j < fullRow.length; j++) sheet.getRange(rowNum, j + 1).setValue(fullRow[j]);
   } else {
-    sheet.appendRow(fullRow);
+    var lr = sheet.getLastRow() + 1;
+      var cols = COLS[name];
+      if (cols && cols[0] === 'date') sheet.getRange(lr, 1).setNumberFormat('@');
+      sheet.getRange(lr, 1, 1, fullRow.length).setValues([fullRow]);
   }
 }
 
@@ -133,10 +136,12 @@ function deduplicateTasks() {
   var after = keyOrder.length;
   if (before === after) { Logger.log('중복 없음'); return; }
 
-  sheet.clearContents();
-  for (var j = 0; j < keyOrder.length; j++) {
-    sheet.appendRow(latestMap[keyOrder[j]]);
-  }
+sheet.clearContents();
+    if (keyOrder.length > 0) {
+      var allRows = keyOrder.map(function(k) { return latestMap[k]; });
+      sheet.getRange(1, 1, allRows.length, allRows[0].length).setValues(allRows);
+      sheet.getRange(1, 1, allRows.length, 1).setNumberFormat('@');
+    }
   Logger.log('정리 완료: ' + before + '행 → ' + after + '행 (' + (before - after) + '개 제거)');
 }
 
