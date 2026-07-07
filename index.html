@@ -587,7 +587,10 @@
 </head>
 <body>
 
-<img src="images/banner.jpg" alt="뼈갈단 배너" class="banner" onerror="this.style.display='none'">
+<picture>
+    <source srcset="images/banner.webp" type="image/webp">
+    <img src="images/banner.jpg" alt="뼈갈단 배너" class="banner" width="1600" height="335" fetchpriority="high" decoding="async" onerror="this.style.display='none'">
+</picture>
 
 <div id="loadingMsg" class="loading-overlay">
     <div class="loading-spinner"></div>
@@ -1037,10 +1040,11 @@
     function loadData(forceRefresh, silent) {
         const loadingEl = document.getElementById('loadingMsg');
         if(typeof SCRIPT_URL === 'undefined' || SCRIPT_URL.includes("여기에")) { loadingEl.style.display='none'; alert("스크립트 주소를 넣어주세요!"); return; }
-        if (forceRefresh) sessionStorage.removeItem('bs_cache');
+        if (forceRefresh) localStorage.removeItem('bs_cache');
         // 캐시된 데이터가 있으면 즉시 렌더링 (GAS 응답 전에 UI 표시)
+        // localStorage 사용: 브라우저를 껐다 켜도 캐시 유지 → 재방문 시에도 즉시 표시
         // silent 모드(당겨서 새로고침)에서는 오버레이 없이 기존 화면 유지
-        const cached = sessionStorage.getItem('bs_cache');
+        const cached = localStorage.getItem('bs_cache');
         if (cached) {
             try { _applyData(JSON.parse(cached), false); } catch(e) {}
         } else if (!silent) {
@@ -1049,7 +1053,7 @@
         return fetch(SCRIPT_URL + "?action=getAllData")
             .then(response => response.json())
             .then(data => {
-                sessionStorage.setItem('bs_cache', JSON.stringify(data));
+                localStorage.setItem('bs_cache', JSON.stringify(data));
                 _applyData(data, true);
                 loadingEl.style.display = 'none';
             })
