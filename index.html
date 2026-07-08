@@ -128,6 +128,14 @@
         .btn-submit:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 22px rgba(240,69,92,.4); }
         .btn-submit:active { transform: scale(.98); }
 
+        .btn-pass {
+            width: 100%; padding: 11px; background: transparent; color: var(--muted); border: 1.5px dashed var(--line-strong);
+            border-radius: 12px; cursor: pointer; font-weight: 600; font-size: .92em; font-family: inherit;
+            transition: all .2s; margin-top: 8px;
+        }
+        .btn-pass:hover { border-color: rgba(149,165,166,.7); color: var(--ink); background: var(--panel); }
+        .btn-pass:active { transform: scale(.98); }
+
         textarea {
             width: 100%; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px;
             box-sizing: border-box; font-family: inherit; resize: vertical; background: var(--field);
@@ -629,7 +637,6 @@
                 <button class="btn-move" onclick="changeDay(1)">&rsaquo;</button>
             </div>
             <div class="calendar-toolbar-right">
-                <button class="btn-toolbar" onclick="passToday()">패스</button>
                 <button class="btn-toolbar primary" onclick="openModalToday()">성과 작성</button>
             </div>
         </div>
@@ -737,6 +744,7 @@
                 <button class="btn-add" onclick="addTaskItem()">+ 추가</button>
             </div>
             <button class="btn-submit" onclick="saveTask()">제출하기 (수정 저장)</button>
+            <button class="btn-pass" onclick="passFromModal()">오늘은 패스할게요</button>
         </div>
     </div>
 </div>
@@ -1209,8 +1217,8 @@
         openModal(dateKey);
     }
 
-    function passToday() {
-        const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()+1}-${currentDate.getDate()}`;
+    function passFromModal() {
+        const dateKey = selectedDateKey;
         if (isSubmissionLocked(dateKey)) {
             alert(`${dateKey} 성과는 작성 마감되었습니다. (다음날 새벽 4시까지만 작성 가능)`);
             return;
@@ -1218,7 +1226,10 @@
         const name = document.getElementById('userName').value.trim();
         if (!name) { alert("이름을 입력해주세요!"); return; }
         const existing = dbData.tasks ? dbData.tasks.find(t => t.date === dateKey && t.name === name) : null;
-        if (existing) { alert("이미 오늘 성과를 작성하셨어요. 패스는 아직 작성 전일 때만 가능해요."); return; }
+        if (existing && !(parseTaskContent(existing.task).items || []).some(i => i.category === '패스')) {
+            alert("이미 이 날의 성과를 작성하셨어요. 패스는 아직 작성 전일 때만 가능해요.");
+            return;
+        }
 
         const ok = confirm(
             "패스 버튼은 진짜 사적인 일이 있거나 도저히 시간을 낼 수 없었던 그런 하루를 위한 거예요.\n\n" +
@@ -1233,6 +1244,7 @@
         dbData.tasks = dbData.tasks.filter(t => !(t.date === dateKey && t.name === name));
         dbData.tasks.push(newData);
         renderWeeklyCalendar();
+        closeModal();
         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) });
     }
 
