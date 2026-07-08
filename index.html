@@ -182,6 +182,7 @@
         .submitter-card.me { border-color: rgba(240,69,92,.55); background: linear-gradient(160deg, var(--card) 30%, var(--brand-soft)); }
         .submitter-card.submitted { border-color: rgba(43,195,107,.55); }
         .submitter-card.faint { opacity: .55; filter: grayscale(60%); background: var(--panel); border: 1.5px dashed var(--line-strong); box-shadow: none; }
+        .submitter-card.faint.locked-missed { border: 1.5px solid #e74c3c; opacity: .75; }
         .submitter-card .card-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--chip); object-fit: cover; border: 2px solid var(--card); box-shadow: 0 0 0 1.5px var(--line); flex-shrink: 0; transition: transform .25s var(--ease); }
         .submitter-card:hover .card-avatar { transform: scale(1.08) rotate(-3deg); }
         .submitter-card .card-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; overflow: hidden; }
@@ -190,6 +191,7 @@
         .submitter-card .card-badge { font-size: .6em; padding: 2.5px 7px; border-radius: 20px; font-weight: 700; flex-shrink: 0; white-space: nowrap; letter-spacing: .02em; }
         .submitter-card .badge-done { background: linear-gradient(135deg, #34d27b, var(--good-deep)); color: #fff; box-shadow: 0 2px 6px rgba(43,195,107,.35); }
         .submitter-card .badge-none { background: #c8cdd9; color: #fff; }
+        .submitter-card .badge-locked { background: #e74c3c; color: #fff; }
         .submitter-card .rating-badge { font-size: .75em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rating-badge { font-weight: 700; font-size: .9em; }
         .star-rating { position: relative; display: inline-block; color: var(--star-empty); white-space: nowrap; }
@@ -457,6 +459,7 @@
         .day-detail-tag { font-weight: 700; color: #fff; padding: 2px 9px; border-radius: 20px; font-size: .75em; display: inline-block; align-self: flex-start; }
         .day-detail-content { color: var(--ink-soft); line-height: 1.5; word-break: break-all; padding-left: 2px; }
         .detail-mini-card { background: var(--panel); border: 1.5px dashed var(--line-strong); border-radius: 12px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; opacity: .6; }
+        .detail-mini-card.locked-missed { border: 1.5px solid #e74c3c; opacity: .8; }
         .detail-mini-card img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; filter: grayscale(40%); }
         .detail-mini-name { font-size: .82em; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
         .btn-write-from-detail { display: block; width: 100%; padding: 14px; background: var(--brand-grad); color: #fff; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 1em; font-family: inherit; margin-top: 18px; transition: transform .15s, filter .2s; box-shadow: var(--shadow-brand); }
@@ -1081,6 +1084,13 @@
         return parseDateKey(dateKey) < firstDate;
     }
 
+    // 해당 dateKey의 성과 작성 마감 여부 (다음날 새벽 4시 이후면 마감)
+    function isSubmissionLocked(dateKey) {
+        const d = parseDateKey(dateKey);
+        const deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 4, 0, 0);
+        return new Date() >= deadline;
+    }
+
     // ==================== 오늘의 성과 (프로필 카드 그리드) ====================
     function renderWeeklyCalendar() {
         const grid = document.getElementById('weeklyCalendar');
@@ -1120,8 +1130,9 @@
         if (dbData.members) {
             dbData.members.forEach(member => {
                 if (!submittedNames.has(member.name) && !isBeforeFirstTask(member.name, dateKey)) {
+                    const locked = isSubmissionLocked(dateKey);
                     const card = document.createElement('div');
-                    card.className = 'submitter-card faint';
+                    card.className = 'submitter-card faint' + (locked ? ' locked-missed' : '');
                     card.onclick = () => openDayDetail(dateKey);
                     const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
                     card.innerHTML = `
@@ -1129,7 +1140,7 @@
                         <div class="card-info">
                             <div class="card-top-row">
                                 <span class="card-name">${member.name}</span>
-                                <span class="card-badge badge-none">미작성</span>
+                                <span class="card-badge ${locked ? 'badge-locked' : 'badge-none'}">${locked ? '마감' : '미작성'}</span>
                             </div>
                         </div>
                     `;
@@ -1282,10 +1293,11 @@
 
             const miniGrid = document.createElement('div');
             miniGrid.className = 'detail-unsub-grid';
+            const dateLocked = isSubmissionLocked(date);
             unsubmitted.forEach(member => {
                 const avatarUrl = member.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${member.name}`;
                 const card = document.createElement('div');
-                card.className = 'detail-mini-card';
+                card.className = 'detail-mini-card' + (dateLocked ? ' locked-missed' : '');
                 card.innerHTML = `<img src="${avatarUrl}" loading="lazy"><span class="detail-mini-name">${member.name}</span>`;
                 miniGrid.appendChild(card);
             });
@@ -2093,6 +2105,10 @@
 
 
     function openModal(date) {
+        if (isSubmissionLocked(date)) {
+            alert(`${date} 성과는 작성 마감되었습니다. (다음날 새벽 4시까지만 작성 가능)`);
+            return;
+        }
         selectedDateKey = date;
         const myName = document.getElementById('userName').value.trim();
         document.getElementById('modalDateTitle').innerText = `${date} 성과 작성`;
