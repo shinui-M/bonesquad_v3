@@ -234,7 +234,7 @@
         .month-day-cell.selected { border: 2px solid var(--blue); background: #eff6ff; }
 
         /* 오늘의 MVP 스트립 */
-        .mvp-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .mvp-strip { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 20px; }
         .mvp-card {
             display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px;
             border: 1.5px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm);
@@ -245,7 +245,6 @@
         .mvp-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .mvp-card:active { transform: scale(.98); }
         .mvp-card.mvp-star { border-color: rgba(245,184,11,.45); background: linear-gradient(160deg, var(--card) 55%, rgba(245,184,11,.1)); }
-        .mvp-card.mvp-fire { border-color: rgba(240,69,92,.4); background: linear-gradient(160deg, var(--card) 55%, var(--brand-soft)); }
         .mvp-label { font-size: .72em; font-weight: 800; color: var(--muted); letter-spacing: .02em; flex-basis: 100%; }
         .mvp-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: var(--chip); border: 2px solid var(--card); box-shadow: 0 0 0 1.5px var(--line); flex-shrink: 0; }
         .mvp-info { min-width: 0; flex: 1; }
@@ -1184,14 +1183,6 @@
         const maxRating = rated.length ? Math.max(...rated.map(t => t.rating)) : 0;
         const ratingWinners = rated.filter(t => t.rating === maxRating).map(t => t.name);
 
-        // 🔥 불꽃 MVP — 해당 날짜 불 이모지 최다 수신자
-        const fireCounts = {};
-        (dbData.taskLikes || []).filter(l => l.date === dateKey && !HIDDEN_TASK_MEMBERS.includes(l.targetName)).forEach(l => {
-            fireCounts[l.targetName] = (fireCounts[l.targetName] || 0) + 1;
-        });
-        const maxFire = Object.keys(fireCounts).length ? Math.max(...Object.values(fireCounts)) : 0;
-        const fireWinners = Object.keys(fireCounts).filter(n => fireCounts[n] === maxFire);
-
         const winnerHtml = (winners, valueHtml) => {
             const first = winners[0];
             const extra = winners.length > 1 ? ` <span class="mvp-extra">외 ${winners.length - 1}명</span>` : '';
@@ -1208,10 +1199,6 @@
             <div class="mvp-card mvp-star" onclick="openDayDetail('${dateKey}')">
                 <span class="mvp-label">⭐ 오늘의 MVP</span>
                 ${ratingWinners.length ? winnerHtml(ratingWinners, renderStars(maxRating.toFixed(1))) : emptyHtml}
-            </div>
-            <div class="mvp-card mvp-fire" onclick="openDayDetail('${dateKey}')">
-                <span class="mvp-label">🔥 불꽃 MVP</span>
-                ${maxFire > 0 ? winnerHtml(fireWinners, '🔥 ' + maxFire + '개') : emptyHtml}
             </div>`;
     }
 
