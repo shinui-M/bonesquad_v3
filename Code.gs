@@ -80,7 +80,7 @@ function upsert(ss, name, criteria, fullRow) {
   if (!sheet) return;
   var rowNum = findRow(sheet, name, criteria);
   if (rowNum > 0) {
-    for (var j = 0; j < fullRow.length; j++) sheet.getRange(rowNum, j + 1).setValue(fullRow[j]);
+    sheet.getRange(rowNum, 1, 1, fullRow.length).setValues([fullRow]);
   } else {
     var lr = sheet.getLastRow() + 1;
       var cols = COLS[name];

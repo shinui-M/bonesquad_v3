@@ -14,6 +14,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#e74c3c">
     <link rel="preconnect" href="https://api.dicebear.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
     <title>뼈갈단 V3 </title>
     <style>
@@ -883,6 +884,7 @@
     let currentDate = new Date();
     let weekModalDate = new Date();
     let dbData = { tasks: [], feeds: [], comments: [], members: [], groupMembers: [], groupPosts: [], dietLogs: [], groups: [], deletedDefaultGroups: [], taskLikes: [], taskComments: [] };
+    let _firstTaskMap = new Map(); // 멤버 이름 → 첫 성과일(Date), _applyData()에서 재계산
     // 성과 탭에서만 숨길 멤버 (데이터는 그대로 유지, 화면 표시만 제외)
     const HIDDEN_TASK_MEMBERS = ['박경규'];
     let selectedDateKey = null;
@@ -965,7 +967,7 @@
         }
     });
 
-    window.onload = function() {
+    document.addEventListener('DOMContentLoaded', function() {
         const savedName = localStorage.getItem('study_username');
         if(savedName) {
             document.getElementById('userName').value = savedName;
@@ -977,7 +979,7 @@
         _syncThemeUI();
         addTaskItem();
         loadData();
-    };
+    });
 
     document.getElementById('userName').addEventListener('input', function() {
         localStorage.setItem('study_username', this.value);
@@ -991,6 +993,13 @@
         dbData.tasks        = (Array.isArray(data.tasks) ? data.tasks : dbData.tasks || []).map(t => ({...t, date: _normDate(t.date)}));
         // 서버 중복 행 방어: 같은 date+name의 마지막 항목만 유지
         const _taskMap = new Map(); dbData.tasks.forEach(t => _taskMap.set(t.date + '|' + t.name, t)); dbData.tasks = [..._taskMap.values()];
+        // 멤버별 첫 성과일 미리 계산 (isBeforeFirstTask/getFirstTaskDate가 매번 재계산하지 않도록)
+        _firstTaskMap = new Map();
+        dbData.tasks.forEach(t => {
+            const d = parseDateKey(t.date);
+            const cur = _firstTaskMap.get(t.name);
+            if (!cur || d < cur) _firstTaskMap.set(t.name, d);
+        });
         dbData.feeds        = Array.isArray(data.feeds)        ? data.feeds        : dbData.feeds        || [];
         dbData.comments     = Array.isArray(data.comments)     ? data.comments     : dbData.comments     || [];
         dbData.members      = Array.isArray(data.members)      ? data.members      : dbData.members      || [];
@@ -1095,9 +1104,8 @@
 
     // 멤버의 첫 성과 날짜 이전인지 확인 (첫 성과 없으면 true = 숨김)
     function isBeforeFirstTask(memberName, dateKey) {
-        const memberTasks = dbData.tasks ? dbData.tasks.filter(t => t.name === memberName) : [];
-        if (memberTasks.length === 0) return true;
-        const firstDate = memberTasks.map(t => parseDateKey(t.date)).sort((a,b) => a-b)[0];
+        const firstDate = getFirstTaskDate(memberName);
+        if (!firstDate) return true;
         return parseDateKey(dateKey) < firstDate;
     }
 
@@ -2246,7 +2254,7 @@
         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(newData) });
     }
 
-    function getFirstTaskDate(name) { const tasks = dbData.tasks ? dbData.tasks.filter(t => t.name === name) : []; if (tasks.length === 0) return null; return tasks.map(t => parseDateKey(t.date)).sort((a,b) => a-b)[0]; }
+    function getFirstTaskDate(name) { return _firstTaskMap.has(name) ? _firstTaskMap.get(name) : null; }
     function getMemberColor(member) {
         if (member && member.bannerColor) {
             // hex → hsl 변환 후 그라디언트 2색 생성
