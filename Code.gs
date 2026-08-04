@@ -107,6 +107,21 @@ function delRow(ss, name, criteria) {
   if (rowNum > 0) sheet.deleteRow(rowNum);
 }
 
+// Date 객체뿐 아니라, 과거 버그로 텍스트 저장된 "Wed Jun 10 2026 00:00:00 GMT+0900 (...)" 같은
+// JS Date.toString() 형식 문자열도 'yyyy-M-d'로 정규화 (2026-01~07 데이터에 다수 존재)
+function _normalizeDateForCleanup(dVal, tz) {
+  if (dVal instanceof Date) {
+    return Utilities.formatDate(dVal, tz, 'yyyy-M-d');
+  }
+  var s = String(dVal).trim();
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) return s;
+  var parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    return Utilities.formatDate(parsed, tz, 'yyyy-M-d');
+  }
+  return s;
+}
+
 function deduplicateTasks() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var tz = ss.getSpreadsheetTimeZone();
@@ -121,10 +136,7 @@ function deduplicateTasks() {
   var keyOrder = [];
   var latestMap = {};
   for (var i = 0; i < vals.length; i++) {
-    var dVal = vals[i][0];
-    var dStr = (dVal instanceof Date)
-      ? Utilities.formatDate(dVal, tz, 'yyyy-M-d')
-      : String(dVal).trim();
+    var dStr = _normalizeDateForCleanup(vals[i][0], tz);
     var nStr = String(vals[i][1]).trim();
     if (!dStr && !nStr) continue;
     var key = dStr + '|' + nStr;
@@ -142,7 +154,7 @@ sheet.clearContents();
       sheet.getRange(1, 1, allRows.length, allRows[0].length).setValues(allRows);
       sheet.getRange(1, 1, allRows.length, 1).setNumberFormat('@');
     }
-  Logger.log('정리 완료: ' + before + '행 → ' + after + '행 (' + (before - after) + '개 제거)');
+  Logger.log('정리 완료: ' + before + '행 → ' + after + '행 (' + (before - after) + '개 제거, 날짜 형식도 함께 정규화됨)');
 }
 
 function doGet(e) {
