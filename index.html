@@ -476,6 +476,20 @@
         .btn-write-from-detail:hover { filter: brightness(1.06); transform: translateY(-1px); }
         .btn-write-from-detail:active { transform: scale(.98); }
 
+        /* 성과 검색 */
+        .search-field-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .search-field-row input { flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: .92em; background: var(--card); color: var(--ink); box-sizing: border-box; }
+        .search-field-row input#searchKeyword { flex: 2; }
+        .search-field-row .btn-submit { margin: 0; width: auto; padding: 10px 18px; white-space: nowrap; }
+        .search-result-item { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); transition: box-shadow .2s var(--ease), transform .2s var(--ease); animation: rise .4s var(--ease) backwards; }
+        .search-result-item:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .search-result-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--chip); flex-shrink: 0; }
+        .search-result-body { flex: 1; min-width: 0; }
+        .search-result-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
+        .search-result-name { font-weight: 700; font-size: .92em; color: var(--ink); }
+        .search-result-date { font-size: .78em; color: var(--muted); white-space: nowrap; }
+        .search-result-item mark { background: rgba(240,69,92,.22); color: var(--brand); border-radius: 4px; padding: 0 2px; font-weight: 700; }
+
         /* 카드 액션 버튼 행 (불 이모지 + 댓글) */
         .card-actions-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
         .btn-fire, .btn-comment { border: 1px solid var(--line); border-radius: 20px; padding: 5px 13px; background: var(--panel); cursor: pointer; font-size: .9em; font-family: inherit; transition: background .2s, border-color .2s, transform .15s; }
@@ -635,6 +649,7 @@
             <div class="calendar-toolbar-left">
                 <button class="btn-toolbar btn-icon" onclick="openCalendarModal()" title="달력">📅</button>
                 <button class="btn-toolbar btn-icon" onclick="goToToday()" title="오늘로 이동">🎯</button>
+                <button class="btn-toolbar btn-icon" onclick="openSearchModal()" title="성과 검색">🔍</button>
             </div>
             <div class="calendar-toolbar-center">
                 <button class="btn-move" onclick="changeDay(-1)">&lsaquo;</button>
@@ -859,6 +874,24 @@
                 <textarea id="thanksItem3" placeholder="오늘 감사한 일을 입력하세요"></textarea>
             </div>
             <button class="btn-submit" onclick="saveThanksLog()">기록 저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 성과 검색 모달 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content wide">
+        <div class="modal-header">
+            <span>🔍 성과 검색</span>
+            <span class="close-btn" onclick="closeSearchModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="search-field-row">
+                <input type="text" id="searchName" placeholder="이름 (선택)" onkeydown="if(event.key==='Enter') runTaskSearch()">
+                <input type="text" id="searchKeyword" placeholder="검색어를 입력하세요" onkeydown="if(event.key==='Enter') runTaskSearch()">
+                <button class="btn-submit" onclick="runTaskSearch()">검색</button>
+            </div>
+            <div id="searchResults"></div>
         </div>
     </div>
 </div>
@@ -1355,6 +1388,85 @@
 
     function closeDayDetail() {
         document.getElementById('dayDetailModal').style.display = 'none';
+    }
+
+    // ==================== 성과 검색 ====================
+    function openSearchModal() {
+        document.getElementById('searchResults').innerHTML = '';
+        document.getElementById('searchModal').style.display = 'flex';
+        document.getElementById('searchKeyword').focus();
+    }
+
+    function closeSearchModal() {
+        document.getElementById('searchModal').style.display = 'none';
+    }
+
+    function runTaskSearch() {
+        const nameFilter = document.getElementById('searchName').value.trim().toLowerCase();
+        const keyword = document.getElementById('searchKeyword').value.trim();
+        const resultsEl = document.getElementById('searchResults');
+        resultsEl.innerHTML = '';
+
+        if (!keyword) {
+            resultsEl.innerHTML = '<div style="text-align:center; color:var(--muted); padding:30px;">검색어를 입력해주세요.</div>';
+            return;
+        }
+
+        const kwLower = keyword.toLowerCase();
+        const matches = [];
+        (dbData.tasks || []).forEach(t => {
+            if (HIDDEN_TASK_MEMBERS.includes(t.name)) return;
+            if (nameFilter && !t.name.toLowerCase().includes(nameFilter)) return;
+            const parsed = parseTaskContent(t.task);
+            if (!parsed.items) return;
+            parsed.items.forEach(item => {
+                if (item.content && item.content.toLowerCase().includes(kwLower)) {
+                    matches.push({ date: t.date, name: t.name, category: item.category, content: item.content });
+                }
+            });
+        });
+
+        matches.sort((a, b) => parseDateKey(b.date) - parseDateKey(a.date));
+
+        if (matches.length === 0) {
+            resultsEl.innerHTML = '<div style="text-align:center; color:var(--muted); padding:30px;">검색 결과가 없습니다.</div>';
+            return;
+        }
+
+        const countEl = document.createElement('div');
+        countEl.className = 'detail-section-title';
+        countEl.textContent = `검색 결과 ${matches.length}건`;
+        resultsEl.appendChild(countEl);
+
+        const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const kwRegex = new RegExp(`(${esc(keyword)})`, 'gi');
+
+        matches.forEach(m => {
+            const memberInfo = dbData.members ? dbData.members.find(mm => mm.name === m.name) : null;
+            const avatarUrl = memberInfo && memberInfo.avatar ? memberInfo.avatar : `https://api.dicebear.com/7.x/notionists/svg?seed=${m.name}`;
+            let tagColor = '#95a5a6';
+            if (m.category === '몰입') tagColor = '#e74c3c';
+            if (m.category === '성장') tagColor = '#2ecc71';
+            if (m.category === '일정') tagColor = '#3498db';
+            if (m.category === '충전') tagColor = '#f1c40f';
+            const textColor = m.category === '충전' ? 'color:#333;' : '';
+            const highlighted = m.content.replace(kwRegex, '<mark>$1</mark>');
+
+            const row = document.createElement('div');
+            row.className = 'search-result-item';
+            row.onclick = () => { closeSearchModal(); openDayDetail(m.date); };
+            row.innerHTML = `
+                <img src="${avatarUrl}" class="search-result-avatar" loading="lazy">
+                <div class="search-result-body">
+                    <div class="search-result-meta">
+                        <span class="search-result-name">${m.name}</span>
+                        <span class="search-result-date">${m.date}</span>
+                    </div>
+                    <div class="day-detail-item"><span class="day-detail-tag" style="background:${tagColor};${textColor}">${m.category}</span><span class="day-detail-content">${highlighted}</span></div>
+                </div>
+            `;
+            resultsEl.appendChild(row);
+        });
     }
 
     function changeDay(offset) { currentDate.setDate(currentDate.getDate() + offset); renderWeeklyCalendar(); }
@@ -2435,6 +2547,7 @@
         if(e.target == document.getElementById('calendarModal')) closeCalendarModal();
         if(e.target == document.getElementById('taskCommentModal')) closeTaskComments();
         if(e.target == document.getElementById('feedDetailModal')) closeFeedDetail();
+        if(e.target == document.getElementById('searchModal')) closeSearchModal();
     }
 </script>
 </body>
