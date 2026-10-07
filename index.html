@@ -448,6 +448,8 @@
 
         /* 로딩 */
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(248,249,253,.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 2000; }
+        .full-data-banner { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: var(--brand); color: #fff; font-size: .78em; font-weight: 600; padding: 7px 14px; border-radius: 999px; box-shadow: var(--shadow-sm); z-index: 1500; display: none; align-items: center; gap: 6px; pointer-events: none; }
+        .full-data-banner.show { display: flex; }
         .loading-spinner { border: 4px solid #f0f2f8; border-top: 4px solid var(--brand); border-right: 4px solid #ff9aa6; border-radius: 50%; width: 48px; height: 48px; animation: spin .8s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .close-btn { cursor: pointer; font-size: 1.9em; line-height: .5; color: var(--muted); transition: color .2s, transform .2s; border-radius: 8px; padding: 6px 2px; }
@@ -629,6 +631,8 @@
     <div style="color:var(--brand); font-weight:bold; font-size:1.2em;">데이터 불러오는 중...</div>
 </div>
 
+<div id="fullDataBanner" class="full-data-banner">⏳ 전체 기록 불러오는 중...</div>
+
 <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="다크 모드">🌙</button>
 
 <div id="ptrIndicator" class="ptr-indicator"><span class="ptr-arrow">&darr;</span></div>
@@ -796,6 +800,7 @@
                 <span id="monthModalRange" style="font-weight:bold; font-size:1.1em;"></span>
                 <button class="btn-move" onclick="changeMonthInModal(1)">&rsaquo;</button>
             </div>
+            <div id="monthDataNotice" style="display:none; text-align:center; color:var(--muted); font-size:.85em; padding:0 0 10px;">⏳ 전체 기록을 불러오는 중이라 이전 달 기록은 아직 비어 보일 수 있어요.</div>
             <div class="month-grid" id="monthGridModal"></div>
         </div>
     </div>
@@ -1099,6 +1104,27 @@
         }
     }
 
+    let dataFullyLoaded = false; // 전체 기록(getAllData, recent 파라미터 없음) 로딩 완료 여부
+    let _lastOpenedDetailDate = null; // dayDetailModal에 마지막으로 열렸던 날짜 (전체 데이터 도착 시 재렌더링용)
+
+    function _setFullDataBanner(show) {
+        const el = document.getElementById('fullDataBanner');
+        if (el) el.classList.toggle('show', show);
+    }
+
+    // 전체 데이터 도착 시, 이미 열려있는 "보기" 계열 모달을 최신 데이터로 다시 그려줌
+    function _refreshOpenViewsWithFullData() {
+        const ddm = document.getElementById('dayDetailModal');
+        if (ddm && ddm.style.display === 'flex' && _lastOpenedDetailDate) openDayDetail(_lastOpenedDetailDate);
+        const cm = document.getElementById('calendarModal');
+        if (cm && cm.style.display === 'flex') renderMonthGridModal();
+        const sm = document.getElementById('searchModal');
+        if (sm && sm.style.display === 'flex') {
+            const kw = document.getElementById('searchKeyword').value.trim();
+            if (kw) runTaskSearch();
+        }
+    }
+
     function loadData(forceRefresh, silent) {
         const loadingEl = document.getElementById('loadingMsg');
         if(typeof SCRIPT_URL === 'undefined' || SCRIPT_URL.includes("여기에")) { loadingEl.style.display='none'; alert("스크립트 주소를 넣어주세요!"); return; }
@@ -1108,18 +1134,44 @@
         // silent 모드(당겨서 새로고침)에서는 오버레이 없이 기존 화면 유지
         const cached = localStorage.getItem('bs_cache');
         if (cached) {
-            try { _applyData(JSON.parse(cached), false); } catch(e) {}
+            try { _applyData(JSON.parse(cached), false); dataFullyLoaded = true; } catch(e) {}
         } else if (!silent) {
             loadingEl.style.display = 'flex';
         }
-        return fetch(SCRIPT_URL + "?action=getAllData")
+
+        // 전체 기록(getAllData) 요청 — 캐시(bs_cache)에는 항상 이 전체 응답만 저장
+        function fetchFull() {
+            return fetch(SCRIPT_URL + "?action=getAllData")
+                .then(response => response.json())
+                .then(data => {
+                    localStorage.setItem('bs_cache', JSON.stringify(data));
+                    _applyData(data, true);
+                    dataFullyLoaded = true;
+                    _setFullDataBanner(false);
+                    loadingEl.style.display = 'none';
+                    _refreshOpenViewsWithFullData();
+                })
+                .catch(e => { console.error(e); loadingEl.style.display = 'none'; _setFullDataBanner(false); if (!cached) alert('서버 연결 실패. 잠시 후 다시 시도해주세요.'); });
+        }
+
+        // 캐시가 있거나(이미 완전한 데이터로 그려진 상태) 수동 새로고침(forceRefresh)이면
+        // 바로 전체 데이터를 받아온다 (기존 동작과 동일)
+        if (cached || forceRefresh) {
+            return fetchFull();
+        }
+
+        // 캐시 없는 최초 방문: 최근 성과만 먼저 빠르게 받아 성과 작성을 바로 가능하게 하고,
+        // 과거 전체 기록은 백그라운드에서 이어서 불러옴 (완료 전까지 과거 조회는 배너로 안내)
+        dataFullyLoaded = false;
+        return fetch(SCRIPT_URL + "?action=getAllData&recent=1")
             .then(response => response.json())
             .then(data => {
-                localStorage.setItem('bs_cache', JSON.stringify(data));
                 _applyData(data, true);
                 loadingEl.style.display = 'none';
+                _setFullDataBanner(true);
+                return fetchFull();
             })
-            .catch(e => { console.error(e); loadingEl.style.display='none'; alert('서버 연결 실패. 잠시 후 다시 시도해주세요.'); });
+            .catch(e => { console.error(e); return fetchFull(); });
     }
 
     // dateKey("2025-2-15") → Date 객체로 변환
@@ -1285,8 +1337,12 @@
     }
 
     function openDayDetail(date) {
+        _lastOpenedDetailDate = date;
         const container = document.getElementById('dayDetailContent');
         container.innerHTML = '';
+        if (!dataFullyLoaded) {
+            container.innerHTML = '<div style="text-align:center; color:var(--muted); font-size:.85em; padding:4px 0 10px;">⏳ 전체 기록을 불러오는 중이라 오래된 날짜는 아직 비어 보일 수 있어요. 잠시 후 자동으로 채워집니다.</div>';
+        }
         document.getElementById('dayDetailTitle').innerText = `${date} 모두의 성과`;
 
         const writeBtn = document.querySelector('#dayDetailModal .btn-write-from-detail');
@@ -1300,7 +1356,7 @@
         const unsubmitted = dbData.members ? dbData.members.filter(m => !HIDDEN_TASK_MEMBERS.includes(m.name) && !submittedNames.has(m.name) && !isBeforeFirstTask(m.name, date)) : [];
 
         if (todaysTasks.length === 0 && unsubmitted.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:var(--muted); padding:30px;">기록이 없습니다.</div>';
+            container.innerHTML += '<div style="text-align:center; color:var(--muted); padding:30px;">기록이 없습니다.</div>';
             document.getElementById('dayDetailModal').style.display = 'flex';
             return;
         }
@@ -1412,6 +1468,10 @@
             return;
         }
 
+        if (!dataFullyLoaded) {
+            resultsEl.innerHTML = '<div style="text-align:center; color:var(--muted); font-size:.85em; padding:4px 0 10px;">⏳ 전체 기록을 불러오는 중입니다. 완료되면 자동으로 다시 검색됩니다.</div>';
+        }
+
         const kwLower = keyword.toLowerCase();
         const matches = [];
         (dbData.tasks || []).forEach(t => {
@@ -1429,7 +1489,7 @@
         matches.sort((a, b) => parseDateKey(b.date) - parseDateKey(a.date));
 
         if (matches.length === 0) {
-            resultsEl.innerHTML = '<div style="text-align:center; color:var(--muted); padding:30px;">검색 결과가 없습니다.</div>';
+            resultsEl.innerHTML += '<div style="text-align:center; color:var(--muted); padding:30px;">검색 결과가 없습니다.</div>';
             return;
         }
 
@@ -1492,6 +1552,8 @@
     function renderMonthGridModal() {
         const grid = document.getElementById('monthGridModal');
         grid.innerHTML = '';
+        const notice = document.getElementById('monthDataNotice');
+        if (notice) notice.style.display = dataFullyLoaded ? 'none' : 'block';
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         const year = weekModalDate.getFullYear();
         const month = weekModalDate.getMonth();

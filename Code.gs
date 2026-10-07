@@ -1,6 +1,6 @@
 // =============================================================
-// 뼈갈단 V3 — Google Apps Script V33
-// saveThanksLog: 감사일기 그룹 Thankslog 시트 연동 추가
+// 뼈갈단 V3 — Google Apps Script V34
+// doGet(?recent=1): 최근 RECENT_DAYS일 치 성과만 먼저 가볍게 반환 (초기 로딩 속도 개선, index.html 2단계 로딩과 연동)
 // =============================================================
 
 var _tz = null; // 스프레드시트 시간대 (doGet/doPost에서 설정)
@@ -157,6 +157,18 @@ sheet.clearContents();
   Logger.log('정리 완료: ' + before + '행 → ' + after + '행 (' + (before - after) + '개 제거, 날짜 형식도 함께 정규화됨)');
 }
 
+// "yyyy-M-d" 형식 문자열 → Date. 과거 버그로 남은 Date.toString() 텍스트도 재시도 파싱.
+// 파싱 불가하면 null 반환 (호출부에서 "범위 안전쪽"으로 처리, 즉 필터링에서 제외하지 않음)
+function _taskDateObj(s) {
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(s).trim());
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// 최근 데이터만 먼저 가볍게 보내기 위한 기준 일수 — index.html loadData()의 2단계 로딩과 짝을 이룸
+var RECENT_DAYS = 45;
+
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -164,6 +176,20 @@ function doGet(e) {
 
     function safe(name) {
       try { return readSheet(ss, name); } catch(err) { return []; }
+    }
+
+    // ?recent=1 이면 최근 RECENT_DAYS일 치 성과만 반환 (초기 로딩 속도 개선용, index.html 2단계 로딩과 연동)
+    var recentOnly = !!(e && e.parameter && e.parameter.recent === '1');
+    var cutoff = null;
+    if (recentOnly) {
+      cutoff = new Date();
+      cutoff.setHours(0, 0, 0, 0);
+      cutoff.setDate(cutoff.getDate() - RECENT_DAYS);
+    }
+    function withinWindow(dateStr) {
+      if (!cutoff) return true;
+      var d = _taskDateObj(dateStr);
+      return !d || d >= cutoff; // 파싱 실패 시 안전하게 포함
     }
 
     var allCmts = safe('Comments');
@@ -178,6 +204,7 @@ function doGet(e) {
         var p1 = rest2.indexOf(':');
         if (p1 < 0) continue;
         var dateStr = rest2.slice(0, p1);
+        if (!withinWindow(dateStr)) continue;
         var rest3 = rest2.slice(p1 + 1);
         var p2 = rest3.indexOf(':');
         if (p2 < 0) continue;
@@ -186,6 +213,7 @@ function doGet(e) {
       } else if (fid.indexOf('cmt:') === 0) {
         try {
           var meta = JSON.parse(r.content);
+          if (!withinWindow(meta.date)) continue;
           taskComments.push({ id: fid.slice(4), date: meta.date, targetName: meta.target, authorName: r.authorName, content: meta.text });
         } catch(e2) {}
 
@@ -194,8 +222,11 @@ function doGet(e) {
       }
     }
 
+    var tasks = safe('Tasks');
+    if (cutoff) tasks = tasks.filter(function(t) { return withinWindow(t.date); });
+
     var result = {
-      tasks:               safe('Tasks'),
+      tasks:               tasks,
       feeds:               safe('Feeds'),
       comments:            comments,
       taskLikes:           taskLikes,
@@ -206,7 +237,8 @@ function doGet(e) {
       dietLogs:            safe('DietLogs'),
       thanksLogs:          safe('Thankslog'),
       groups:              safe('Groups'),
-      deletedDefaultGroups: safe('DeletedDefaultGroups')
+      deletedDefaultGroups: safe('DeletedDefaultGroups'),
+      _partial:             recentOnly
     };
 
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
